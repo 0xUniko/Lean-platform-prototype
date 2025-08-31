@@ -1,0 +1,1 @@
+My [Lean](https://github.com/QuantConnect/Lean) platform prototyp

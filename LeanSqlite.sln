@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "LeanSqlite.MarketData", "LeanSqlite.MarketData\LeanSqlite.MarketData.fsproj", "{523CA8D4-B4D9-4C09-A5C0-BE77282E0955}"
+EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "LeanSqlite.HistoryProvider", "LeanSqlite.HistoryProvider\LeanSqlite.HistoryProvider.fsproj", "{D4822C23-C01E-4737-9B4D-9294F6B32B4B}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{523CA8D4-B4D9-4C09-A5C0-BE77282E0955}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{523CA8D4-B4D9-4C09-A5C0-BE77282E0955}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{523CA8D4-B4D9-4C09-A5C0-BE77282E0955}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{523CA8D4-B4D9-4C09-A5C0-BE77282E0955}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D4822C23-C01E-4737-9B4D-9294F6B32B4B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D4822C23-C01E-4737-9B4D-9294F6B32B4B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D4822C23-C01E-4737-9B4D-9294F6B32B4B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D4822C23-C01E-4737-9B4D-9294F6B32B4B}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

@@ -1,0 +1,59 @@
+# --- .NET build outputs ---
+bin/
+obj/
+*.user
+*.rsuser
+*.suo
+*.userprefs
+*.swp
+*.vs/
+*.DS_Store
+
+# --- Solution artifacts ---
+*.sln.docstates
+
+# --- NuGet packages ---
+*.nupkg
+*.snupkg
+*.nuspec
+packages/
+
+# --- Logs & crash dumps ---
+*.log
+*.tlog
+*.dmp
+
+# --- Test results ---
+TestResult.xml
+TestResults/
+*.trx
+*.coverage
+*.coveragexml
+
+# --- SQLite databases ---
+*.db
+*.sqlite
+*.sqlite3
+marketdata.db
+
+# --- Lean specific ---
+# Lean 的配置文件可以有多份：保留你自己的 build/launcher.config.json
+# 忽略 submodule 里的 config.json，避免误提交
+lean/Launcher/config.json
+
+# Lean 运行时产生的日志和回测结果
+lean/Launcher/bin/
+lean/Launcher/obj/
+lean/Engine/bin/
+lean/Engine/obj/
+lean/**/*.log
+lean/**/*.csv
+lean/**/*.json
+Results/
+*.pyc
+__pycache__/
+
+# --- Patch files (可选，如果你用补丁机制) ---
+patches/*.patch
+
+.fake
