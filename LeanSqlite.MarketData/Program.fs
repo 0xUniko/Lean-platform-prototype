@@ -10,7 +10,6 @@ open QuantConnect.Data.Market
 // 解析辅助
 // ------------------------------
 module private Parse =
-    open QuantConnect
     let parseDate (s: string) =
         let ok, dt = DateTime.TryParse s
 
@@ -33,13 +32,36 @@ module private Parse =
             | "daily" -> Resolution.Daily
             | _ -> failwithf "Unknown resolution: %s" s
 
-    let parseMarket (s: string) =
-        if String.IsNullOrWhiteSpace s then Market.Binance else s
+    /// 将用户输入规范化为 Lean 的 Market 常量；不认识的直接报错
+    let makeSymbol (market: string) (ticker: string) =
+        let mkt =
+            match market.Trim().ToLowerInvariant() with
+            | "binance"
+            | "bn" -> Market.Binance
+            | "binanceus"
+            | "bnus"
+            | "bus" -> Market.BinanceUS
+            | "gdax"
+            | "coinbase"
+            | "coinbasepro"
+            | "cb" -> Market.Coinbase
+            | "kraken" -> Market.Kraken
+            | "bitfinex" -> Market.Bitfinex
+            // —— 常见外汇经纪商 ——（Lean 常量）
+            | "oanda" -> Market.Oanda
+            | "fxcm" -> Market.FXCM
+            // —— 美国股票（聚合市场）——
+            | "usa"
+            | "us" -> Market.USA
+            // 其余未知：提示用户
+            | other ->
+                failwithf
+                    "Unknown/unsupported market: %s. Try one of: binance, binanceus, gdax, kraken, bitfinex, oanda, fxcm, usa"
+                    other
 
-    let makeSymbol (mkt: string) (ticker: string) =
         Symbol.Create(ticker.ToUpperInvariant(), SecurityType.Crypto, mkt)
 
-    let todayUtcRightOpen () = DateTime.UtcNow.Date.AddDays(1.0) // 右开区间上界
+    let todayUtcRightOpen () = DateTime.UtcNow.Date.AddDays 1.0 // 右开区间上界
 
 // ------------------------------
 // 子命令参数
@@ -133,8 +155,7 @@ module private Impl =
         let res =
             args.TryGetResult DownloadArgs.Resolution |> Option.defaultValue "" |> parseRes
 
-        let mkt =
-            args.TryGetResult DownloadArgs.Market |> Option.defaultValue "" |> parseMarket
+        let mkt = args.TryGetResult DownloadArgs.Market |> Option.defaultValue ""
 
         let syms =
             match args.GetResults DownloadArgs.Symbol with
@@ -177,8 +198,7 @@ module private Impl =
     let runStats (args: ParseResults<StatsArgs>) =
         let conn = args.TryGetResult StatsArgs.Connection |> Option.defaultValue defaultConn
 
-        let mkt =
-            args.TryGetResult StatsArgs.Market |> Option.defaultValue "" |> parseMarket
+        let mkt = args.TryGetResult StatsArgs.Market |> Option.defaultValue "binance"
 
         let res =
             args.TryGetResult StatsArgs.Resolution |> Option.defaultValue "" |> parseRes
@@ -205,7 +225,7 @@ module private Impl =
 
     let runVerify (args: ParseResults<VerifyArgs>) =
         let conn = args.TryGetResult Connection |> Option.defaultValue defaultConn
-        let mkt = args.TryGetResult Market |> Option.defaultValue "" |> parseMarket
+        let mkt = args.TryGetResult Market |> Option.defaultValue "binance"
         let res = args.TryGetResult Resolution |> Option.defaultValue "" |> parseRes
 
         let tkr =

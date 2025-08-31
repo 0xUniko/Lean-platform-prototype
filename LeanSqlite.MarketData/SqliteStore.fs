@@ -72,14 +72,6 @@ module private Ef =
     let toTradeBar (symbol: Symbol) (per: TimeSpan) (r: CandleEntity) =
         TradeBar(r.Time, symbol, r.Open, r.High, r.Low, r.Close, r.Volume, per)
 
-    /// 将大集合分块（避免一次批次过大）
-    let chunk (size: int) (items: 'a list) : 'a list list =
-        items
-        |> Seq.mapi (fun i x -> i / size, x)
-        |> Seq.groupBy fst
-        |> Seq.map (snd >> Seq.map snd >> Seq.toList)
-        |> Seq.toList
-
 // ---------------------------
 // 公共 API：Upsert / Query
 // ---------------------------
