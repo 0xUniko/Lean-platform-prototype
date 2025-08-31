@@ -10,6 +10,8 @@ open QuantConnect.Data.Market
 // 解析辅助
 // ------------------------------
 module private Parse =
+    let defaultMarket = "binance"
+
     let parseDate (s: string) =
         let ok, dt = DateTime.TryParse s
 
@@ -21,9 +23,8 @@ module private Parse =
 
     let parseRes =
         function
-        | null
-        | "" -> Resolution.Minute
-        | s ->
+        | None -> Resolution.Minute
+        | Some(s: string) ->
             match s.Trim().ToLowerInvariant() with
             | "tick" -> Resolution.Tick
             | "second" -> Resolution.Second
@@ -33,7 +34,12 @@ module private Parse =
             | _ -> failwithf "Unknown resolution: %s" s
 
     /// 将用户输入规范化为 Lean 的 Market 常量；不认识的直接报错
-    let makeSymbol (market: string) (ticker: string) =
+    let makeSymbol (marketOpt: string option) (ticker: string) =
+        let market =
+            match marketOpt with
+            | Some m -> m
+            | None -> defaultMarket
+
         let mkt =
             match market.Trim().ToLowerInvariant() with
             | "binance"
@@ -146,16 +152,14 @@ type Commands =
 module private Impl =
     open Parse
 
-    let private defaultConn = "Data Source=marketdata.db"
+
 
     let runDownload (args: ParseResults<DownloadArgs>) =
-        let conn =
-            args.TryGetResult DownloadArgs.Connection |> Option.defaultValue defaultConn
+        let conn = args.TryGetResult DownloadArgs.Connection
 
-        let res =
-            args.TryGetResult DownloadArgs.Resolution |> Option.defaultValue "" |> parseRes
+        let res = args.TryGetResult DownloadArgs.Resolution |> parseRes
 
-        let mkt = args.TryGetResult DownloadArgs.Market |> Option.defaultValue ""
+        let mkt = args.TryGetResult DownloadArgs.Market
 
         let syms =
             match args.GetResults DownloadArgs.Symbol with
@@ -184,7 +188,7 @@ module private Impl =
             printfn "Saved %d bars for %s" bars.Length tkr
 
     let runList (args: ParseResults<ListArgs>) =
-        let conn = args.TryGetResult ListArgs.Connection |> Option.defaultValue defaultConn
+        let conn = args.TryGetResult ListArgs.Connection
         let rows = SqliteStore.listInstruments conn
 
         if rows.Length = 0 then
@@ -196,12 +200,11 @@ module private Impl =
                 printfn "%-8s %-8s %-8s %-5s %8d" m s t r cnt
 
     let runStats (args: ParseResults<StatsArgs>) =
-        let conn = args.TryGetResult StatsArgs.Connection |> Option.defaultValue defaultConn
+        let conn = args.TryGetResult StatsArgs.Connection
 
-        let mkt = args.TryGetResult StatsArgs.Market |> Option.defaultValue "binance"
+        let mkt = args.TryGetResult StatsArgs.Market
 
-        let res =
-            args.TryGetResult StatsArgs.Resolution |> Option.defaultValue "" |> parseRes
+        let res = args.TryGetResult StatsArgs.Resolution |> parseRes
 
         let tkr =
             match args.TryGetResult StatsArgs.Symbol with
@@ -215,8 +218,7 @@ module private Impl =
         | Some(fromT, toT, n) -> printfn "%s %A: %d bars [%s .. %s]" tkr res n (fromT.ToString("u")) (toT.ToString("u"))
 
     let runVacuum (args: ParseResults<VacuumArgs>) =
-        let conn =
-            args.TryGetResult VacuumArgs.Connection |> Option.defaultValue defaultConn
+        let conn = args.TryGetResult VacuumArgs.Connection
 
         use ctx = new MarketDataContext(mkOptions conn)
         ctx.Database.EnsureCreated() |> ignore
@@ -224,9 +226,9 @@ module private Impl =
         printfn "VACUUM done."
 
     let runVerify (args: ParseResults<VerifyArgs>) =
-        let conn = args.TryGetResult Connection |> Option.defaultValue defaultConn
-        let mkt = args.TryGetResult Market |> Option.defaultValue "binance"
-        let res = args.TryGetResult Resolution |> Option.defaultValue "" |> parseRes
+        let conn = args.TryGetResult Connection
+        let mkt = args.TryGetResult Market
+        let res = args.TryGetResult Resolution |> parseRes
 
         let tkr =
             match args.TryGetResult <@ Symbol @> with

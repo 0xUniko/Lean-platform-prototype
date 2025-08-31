@@ -50,7 +50,20 @@ type MarketDataContext(options: DbContextOptions<MarketDataContext>) =
 
 [<AutoOpen>]
 module private Ef =
-    let mkOptions (connStr: string) =
+    /// 编译期常量：本文件（SqliteStore.fs）所在目录
+    [<Literal>]
+    let private SourceDir = __SOURCE_DIRECTORY__
+
+    /// 写死为：SqliteStore.fs 同目录下的 marketdata.db
+    let private defaultDbPath = IO.Path.Combine(SourceDir, "marketdata.db")
+    /// 建议带上更稳的参数（WAL/Shared）
+    // let private defaultConn =
+    // $"Data Source={defaultDbPath};Cache=Shared;Mode=ReadWriteCreate;Journal Mode=WAL;Synchronous=Normal"
+
+    let private defaultConn = $"Data Source={defaultDbPath}"
+
+    let mkOptions (connStrOpt: string option) =
+        let connStr = connStrOpt |> Option.defaultValue defaultConn
         DbContextOptionsBuilder<MarketDataContext>().UseSqlite(connStr).Options
 
 
@@ -81,7 +94,7 @@ module SqliteStore =
     /// 批量 Upsert（同步）：EFCore.BulkExtensions
     /// - 复合键：Market, Security, Ticker, Res, Time
     /// - 大批量时自动分块
-    let upsert (connStr: string) (symbol: Symbol) (resolution: Resolution) (bars: TradeBar array) : unit =
+    let upsert (connStr: string option) (symbol: Symbol) (resolution: Resolution) (bars: TradeBar array) : unit =
         use ctx = new MarketDataContext(mkOptions connStr)
         ctx.Database.EnsureCreated() |> ignore
 
@@ -102,7 +115,7 @@ module SqliteStore =
             ctx.BulkInsertOrUpdate(entities, config)
 
     /// 列出库中已有 (Market, Security, Ticker, Res) 的去重清单
-    let listInstruments (connStr: string) =
+    let listInstruments (connStr: string option) =
         use ctx = new MarketDataContext(mkOptions connStr)
         ctx.Database.EnsureCreated() |> ignore
 
@@ -124,7 +137,7 @@ module SqliteStore =
 
 
     /// 统计某合约的时间范围与K线数量
-    let datasetStats (connStr: string) (symbol: Symbol) (resolution: Resolution) =
+    let datasetStats (connStr: string option) (symbol: Symbol) (resolution: Resolution) =
         use ctx = new MarketDataContext(mkOptions connStr)
         ctx.Database.EnsureCreated() |> ignore
 
@@ -153,7 +166,7 @@ module SqliteStore =
             Some(times[0], times[times.Length - 1], times.Length)
 
     /// LINQ 查询：返回按时间升序的 TradeBar 列表
-    let query (connStr: string) (symbol: Symbol) (resolution: Resolution) (range: Domain.DateRange) =
+    let query (connStr: string option) (symbol: Symbol) (resolution: Resolution) (range: Domain.DateRange) =
         use ctx = new MarketDataContext(mkOptions connStr)
         ctx.Database.EnsureCreated() |> ignore
 
@@ -162,6 +175,8 @@ module SqliteStore =
         let s = symbol.ID.SecurityType.ToString().ToLowerInvariant()
         let tkr = symbol.Value
         let rk = resKey resolution
+
+        let sw = Diagnostics.Stopwatch.StartNew()
 
         let rows =
             query {
@@ -179,5 +194,8 @@ module SqliteStore =
                     select c
             }
             |> Seq.toArray
+
+        sw.Stop()
+        printfn "Query executed in: %d ms" sw.ElapsedMilliseconds
 
         rows |> Array.Parallel.map (toTradeBar symbol per)
