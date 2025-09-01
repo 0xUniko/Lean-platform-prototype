@@ -9,6 +9,8 @@ Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Algorithm", "Algorithm\Algo
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Launcher", "Launcher\Launcher.fsproj", "{EA0542E7-ABA2-40F1-AD46-4A3619302E34}"
 EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Lean.Extension", "Lean.Extension\Lean.Extension.fsproj", "{83689393-0895-483D-BD08-7CCC7279310E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -30,5 +32,9 @@ Global
 		{EA0542E7-ABA2-40F1-AD46-4A3619302E34}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EA0542E7-ABA2-40F1-AD46-4A3619302E34}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{EA0542E7-ABA2-40F1-AD46-4A3619302E34}.Release|Any CPU.Build.0 = Release|Any CPU
+		{83689393-0895-483D-BD08-7CCC7279310E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{83689393-0895-483D-BD08-7CCC7279310E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{83689393-0895-483D-BD08-7CCC7279310E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{83689393-0895-483D-BD08-7CCC7279310E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
