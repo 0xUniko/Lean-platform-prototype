@@ -421,9 +421,12 @@ module ConfigGen =
         | Some p when File.Exists p -> fromAnyFile p
         | _ ->
             let candidate = Path.Combine(leanDir, "Launcher", "config.json")
-            if File.Exists candidate then Json.parseFile candidate
+
+            if File.Exists candidate then
+                parseFile candidate
             else
-                Json.parseString """{
+                parseString
+                    """{
                   "environment":"backtesting",
                   "live-mode": false,
                   "algorithm-type-name": "BasicTemplateAlgorithm",
@@ -433,24 +436,26 @@ module ConfigGen =
                 }"""
 
     let patchCommon (algoType: string) (algoLang: string) (algoDll: string) =
-        addPairs [
-            "algorithm-type-name", algoType
-            "algorithm-language",  algoLang
-            "algorithm-location",  (algoDll.Replace("\\", "\\\\"))
-            "plugin-directory",    "./plugins"
-            "composer-dll-directory", "./plugins"
-        ]
+        addPairs
+            [ "algorithm-type-name", algoType
+              "algorithm-language", algoLang
+              "algorithm-location", (algoDll.Replace("\\", "\\\\"))
+              "plugin-directory", "./plugins"
+              "composer-dll-directory", "./plugins" ]
 
     let patchBacktest (historyProvider: string) (startOpt: string option) (endOpt: string option) =
         let basePairs =
             [ "environment", "backtesting"
               "live-mode", "false"
               "history-provider", historyProvider ]
+
         let baseCfg = addPairs basePairs
+
         let withStart =
             match startOpt with
             | Some s -> merge baseCfg (parseString (sprintf """{"start-date":"%s"}""" s))
             | None -> baseCfg
+
         match endOpt with
         | Some e -> merge withStart (parseString (sprintf """{"end-date":"%s"}""" e))
         | None -> withStart
@@ -461,18 +466,20 @@ module ConfigGen =
         (apiKey: string option)
         (apiSecret: string option)
         (wsUrl: string option)
-        (restUrl: string option) =
+        (restUrl: string option)
+        =
         let baseCfg =
-            addPairs [
-                "environment", "live"
-                "live-mode", "true"
-                "brokerage", brokerage
-                "data-queue-handler", dqHandler
-            ]
+            addPairs
+                [ "environment", "live"
+                  "live-mode", "true"
+                  "brokerage", brokerage
+                  "data-queue-handler", dqHandler ]
+
         let add k v (acc: JsonElement) =
             match v with
             | Some s -> merge acc (addPairs [ k, s ])
             | None -> acc
+
         baseCfg
         |> add "uniko-api-key" apiKey
         |> add "uniko-api-secret" apiSecret
@@ -481,8 +488,9 @@ module ConfigGen =
 
     let finalize (tpl: JsonElement) (commonPatch: JsonElement) (modePatch: JsonElement) (overrides: string option) =
         let merged = tpl |> merge commonPatch |> merge modePatch
+
         match overrides with
-        | Some p when File.Exists p -> Json.merge merged (fromAnyFile p)
+        | Some p when File.Exists p -> merge merged (fromAnyFile p)
         | _ -> merged
 
 // ======================================================
@@ -490,10 +498,14 @@ module ConfigGen =
 // ======================================================
 module Runner =
     open Proc
+
     let runLean (launcherDll: string) (runDir: string) =
         Log.Information("启动 Lean：{Dll}", launcherDll)
         let ec = run runDir "dotnet" $"\"{launcherDll}\""
-        if ec <> 0 then failwithf "Lean 运行失败，退出码 %d" ec
+
+        if ec <> 0 then
+            failwithf "Lean 运行失败，退出码 %d" ec
+
         Log.Information("运行完成，产出目录：{RunDir}", runDir)
 
 // ======================================================
@@ -520,36 +532,49 @@ module Main =
             let results = parser.Parse argv
 
             // 通用路径
-            let repo   = results.GetResult(RepoRoot, defaultValue = guessRepoRoot())
-            let leanDir= results.GetResult(LeanDir, defaultValue = Path.Combine(repo, "lean"))
-            let algoDir= results.GetResult(AlgorithmDir, defaultValue = Path.Combine(repo, "Algorithm"))
-            let outRoot= results.GetResult(OutputDir, defaultValue = Path.Combine(repo, "runs"))
+            let repo = results.GetResult(RepoRoot, defaultValue = guessRepoRoot ())
+            let leanDir = results.GetResult(LeanDir, defaultValue = Path.Combine(repo, "lean"))
+
+            let algoDir =
+                results.GetResult(AlgorithmDir, defaultValue = Path.Combine(repo, "Algorithm"))
+
+            let outRoot =
+                results.GetResult(OutputDir, defaultValue = Path.Combine(repo, "runs"))
+
             let pluginsRel = results.GetResult(PluginsOut, defaultValue = "plugins")
-            let skipBuild  = results.Contains NoBuild
+            let skipBuild = results.Contains NoBuild
             let pluginProjects = results.GetResults PluginProject |> List.ofSeq
-            let pluginBins     = results.GetResults PluginBin     |> List.ofSeq
+            let pluginBins = results.GetResults PluginBin |> List.ofSeq
             Directory.CreateDirectory outRoot |> ignore
 
             match results.TryGetSubCommand() with
             // ---------------- BACKTEST -----------------
             | Some(Backtest sub) ->
-                if not skipBuild then buildAll repo algoDir leanDir pluginProjects
-                let algoDll    = findAlgoDll algoDir (sub.TryGetResult BacktestArgs.AlgoDll)
-                let launcherDll= findLeanLauncherDll leanDir (results.TryGetResult LeanLauncherDll)
+                if not skipBuild then
+                    buildAll repo algoDir leanDir pluginProjects
 
-                let stamp  = DateTime.UtcNow.ToString "yyyyMMdd-HHmmss"
+                let algoDll = findAlgoDll algoDir (sub.TryGetResult BacktestArgs.AlgoDll)
+                let launcherDll = findLeanLauncherDll leanDir (results.TryGetResult LeanLauncherDll)
+
+                let stamp = DateTime.UtcNow.ToString "yyyyMMdd-HHmmss"
                 let runDir = Path.Combine(outRoot, "backtest", stamp) |> ensureDir
                 let runPlugins = Path.Combine(runDir, pluginsRel) |> ensureDir
                 collectPlugins runPlugins pluginBins pluginProjects
 
-                let tpl      = loadTemplate leanDir (sub.TryGetResult BacktestArgs.ConfigTemplate)
+                let tpl = loadTemplate leanDir (sub.TryGetResult BacktestArgs.ConfigTemplate)
                 let algoType = sub.GetResult BacktestArgs.AlgoTypeName
                 let algoLang = sub.GetResult(BacktestArgs.AlgoLanguage, defaultValue = "FSharp")
-                let historyProvider = sub.GetResult(HistoryProvider, defaultValue = "Lean.Extension.SqliteHistoryProvider")
+
+                let historyProvider =
+                    sub.GetResult(HistoryProvider, defaultValue = "Lean.Extension.SqliteHistoryProvider")
 
                 let commonPatch = patchCommon algoType algoLang algoDll
-                let modePatch   = patchBacktest historyProvider (sub.TryGetResult Start) (sub.TryGetResult End)
-                let finalCfg    = finalize tpl commonPatch modePatch (sub.TryGetResult BacktestArgs.Overrides)
+
+                let modePatch =
+                    patchBacktest historyProvider (sub.TryGetResult Start) (sub.TryGetResult End)
+
+                let finalCfg =
+                    finalize tpl commonPatch modePatch (sub.TryGetResult BacktestArgs.Overrides)
 
                 Json.write (Path.Combine(runDir, "config.json")) finalCfg
                 Log.Information("配置已写入：{Path}", Path.Combine(runDir, "config.json"))
@@ -559,22 +584,27 @@ module Main =
 
             // ---------------- LIVE -----------------
             | Some(Live sub) ->
-                if not skipBuild then buildAll repo algoDir leanDir pluginProjects
-                let algoDll    = findAlgoDll algoDir (sub.TryGetResult AlgoDll)
-                let launcherDll= findLeanLauncherDll leanDir (results.TryGetResult LeanLauncherDll)
+                if not skipBuild then
+                    buildAll repo algoDir leanDir pluginProjects
 
-                let stamp  = DateTime.UtcNow.ToString "yyyyMMdd-HHmmss"
+                let algoDll = findAlgoDll algoDir (sub.TryGetResult AlgoDll)
+                let launcherDll = findLeanLauncherDll leanDir (results.TryGetResult LeanLauncherDll)
+
+                let stamp = DateTime.UtcNow.ToString "yyyyMMdd-HHmmss"
                 let runDir = Path.Combine(outRoot, "live", stamp) |> ensureDir
                 let runPlugins = Path.Combine(runDir, pluginsRel) |> ensureDir
                 collectPlugins runPlugins pluginBins pluginProjects
 
-                let tpl      = loadTemplate leanDir (sub.TryGetResult ConfigTemplate)
+                let tpl = loadTemplate leanDir (sub.TryGetResult ConfigTemplate)
                 let algoType = sub.GetResult AlgoTypeName
                 let algoLang = sub.GetResult(AlgoLanguage, defaultValue = "FSharp")
                 let brokerage = sub.GetResult(Brokerage, defaultValue = "UnikoCrypto")
-                let dqHandler = sub.GetResult(DataQueueHandler, defaultValue = "YourCompany.Lean.UnikoCryptoDataQueueHandler")
+
+                let dqHandler =
+                    sub.GetResult(DataQueueHandler, defaultValue = "YourCompany.Lean.UnikoCryptoDataQueueHandler")
 
                 let commonPatch = patchCommon algoType algoLang algoDll
+
                 let modePatch =
                     patchLive
                         brokerage
@@ -583,6 +613,7 @@ module Main =
                         (sub.TryGetResult ApiSecret)
                         (sub.TryGetResult WsUrl)
                         (sub.TryGetResult RestUrl)
+
                 let finalCfg = finalize tpl commonPatch modePatch (sub.TryGetResult Overrides)
 
                 Json.write (Path.Combine(runDir, "config.json")) finalCfg
@@ -607,9 +638,17 @@ module Main =
                 Console.WriteLine()
                 Console.WriteLine("用法示例：")
                 Console.WriteLine("  回测：")
-                Console.WriteLine("    dotnet run --project Launcher -- backtest -t Algorithm.MyAlgo -L FSharp -s 2020-01-01 -e 2020-12-31 -T ./Launcher/Configs/backtest.toml -O ./Launcher/Configs/overrides.toml --plugin-proj ./src/Lean.Extensions.Uniko/Lean.Extensions.Uniko.fsproj")
+
+                Console.WriteLine(
+                    "    dotnet run --project Launcher -- backtest -t Algorithm.MyAlgo -L FSharp -s 2020-01-01 -e 2020-12-31 -T ./Launcher/Configs/backtest.toml -O ./Launcher/Configs/overrides.toml --plugin-proj ./src/Lean.Extensions.Uniko/Lean.Extensions.Uniko.fsproj"
+                )
+
                 Console.WriteLine("  实盘：")
-                Console.WriteLine("    dotnet run --project Launcher -- live -t Algorithm.MyLiveAlgo -L FSharp -b UnikoCrypto -q YourCompany.Lean.UnikoCryptoDataQueueHandler -T ./Launcher/Configs/live.toml -O ./Launcher/Configs/overrides.toml --plugin-proj ./src/Lean.Extensions.Uniko/Lean.Extensions.Uniko.fsproj")
+
+                Console.WriteLine(
+                    "    dotnet run --project Launcher -- live -t Algorithm.MyLiveAlgo -L FSharp -b UnikoCrypto -q YourCompany.Lean.UnikoCryptoDataQueueHandler -T ./Launcher/Configs/live.toml -O ./Launcher/Configs/overrides.toml --plugin-proj ./src/Lean.Extensions.Uniko/Lean.Extensions.Uniko.fsproj"
+                )
+
                 0
             | _ -> 0
         with ex ->
