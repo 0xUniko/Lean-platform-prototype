@@ -6,13 +6,15 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
-  <ItemGroup><Compile Include="Program.fs" /><Compile Include="BtcusdtMinVolHist.fs" />
+  <ItemGroup><Compile Include="GridBot.fs" /><Compile Include="Program.fs" /><Compile Include="BtcusdtMinVolHist.fs" />
     
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\lean\Common\QuantConnect.csproj" />
     <ProjectReference Include="..\LeanSqlite.MarketData\LeanSqlite.MarketData.fsproj" />
+    <ProjectReference Include="..\lean\Algorithm\QuantConnect.Algorithm.csproj" />
+    <ProjectReference Include="..\lean\Indicators\QuantConnect.Indicators.csproj" />
   </ItemGroup>
 
 </Project>
