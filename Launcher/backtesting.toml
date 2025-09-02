@@ -14,11 +14,11 @@ algorithm-language = "CSharp"
 
 # Physical DLL location
 algorithm-location = "QuantConnect.Algorithm.CSharp.dll"
-
-
 # "algorithm-location": "../../../Algorithm.Python/BasicTemplateFrameworkAlgorithm.py",
+
 # Research notebook
 # "composer-dll-directory": ".",
+
 # engine
 data-folder = "../../../Data/"
 
@@ -26,9 +26,9 @@ data-folder = "../../../Data/"
 debugging = false
 debugging-method = "LocalCmdline"
 
-
 # location of a python virtual env to use libraries from
 # "python-venv": "/venv",
+
 # handlers
 log-handler = "QuantConnect.Logging.CompositeLogHandler"
 messaging-handler = "QuantConnect.Messaging.Messaging"
@@ -49,9 +49,9 @@ symbol-tick-limit = 10000
 # Ignore unknown asset types from brokerages
 ignore-unknown-asset-holdings = true
 
-
 # The maximum amount of transaction threads for concurrent order submissions if the brokerage supports it.
 # "maximum-transaction-threads": 4,
+
 # log missing data files, useful for debugging
 show-missing-data-logs = false
 
@@ -151,7 +151,6 @@ binanceus-api-key = ""
 binanceus-api-url = "https://api.binance.us"
 binanceus-websocket-url = "wss://stream.binance.us:9443/ws"
 
-
 # bybit configuration
 bybit-api-secret = ""
 bybit-api-key = ""
@@ -247,8 +246,8 @@ tastytrade-account-number = ""
 exante-client-id = ""
 exante-application-id = ""
 exante-shared-key = ""
-exante-account-id = "" # Account-id is assigned after registration at Exante
-exante-platform-type = "" # Environment of the application: live or demo
+exante-account-id = ""  # Account-id is assigned after registration at Exante
+exante-platform-type = ""  # Environment of the application: live or demo
 
 # Required to access data from Nasdaq
 # To get your access token go to https://data.nasdaq.com/account/profile
@@ -278,7 +277,7 @@ zerodha-access-token = ""
 zerodha-api-key = ""
 zerodha-product-type = "MIS" # MIS(Intraday) or CNC(Delivery) or NRML(Carry Forward)
 zerodha-trading-segment = "EQUITY" # EQUITY(NSE,BSE) or COMMODITY (MCX)
-zerodha-history-subscription = false # "true" if History API Subscription available
+zerodha-history-subscription = "false" # "true" if History API Subscription available (string in original JSON)
 
 # samco configuration go to https://www.samco.in/stocknote-api
 samco-client-id = ""
@@ -305,7 +304,6 @@ intrinio-password = ""
 
 ema-fast = 10
 ema-slow = 20
-# Unparsed: },
 
 # specify supported languages when running regression tests
 regression-test-languages = ["CSharp", "Python"]
@@ -313,92 +311,76 @@ regression-test-languages = ["CSharp", "Python"]
 # Additional paths to include in python for import resolution
 python-additional-paths = []
 
-[parameters.environments]
+# ---------------------------
+# Environments (root level)
+# ---------------------------
+[environments]
 
 # defines the 'backtesting' environment
-[parameters.environments.backtesting]
+[environments.backtesting]
 live-mode = false
-
 setup-handler = "QuantConnect.Lean.Engine.Setup.BacktestingSetupHandler"
 result-handler = "QuantConnect.Lean.Engine.Results.BacktestingResultHandler"
 data-feed-handler = "QuantConnect.Lean.Engine.DataFeeds.FileSystemDataFeed"
 real-time-handler = "QuantConnect.Lean.Engine.RealTime.BacktestingRealTimeHandler"
 history-provider = ["QuantConnect.Lean.Engine.HistoricalData.SubscriptionDataReaderHistoryProvider"]
 transaction-handler = "QuantConnect.Lean.Engine.TransactionHandlers.BacktestingTransactionHandler"
-# Unparsed: },
 
 # defines the 'live-paper' environment
-[parameters.environments.backtesting.live-paper]
+[environments.live-paper]
 live-mode = true
-
 # the paper brokerage requires the BacktestingTransactionHandler
 live-mode-brokerage = "PaperBrokerage"
-
 setup-handler = "QuantConnect.Lean.Engine.Setup.BrokerageSetupHandler"
 result-handler = "QuantConnect.Lean.Engine.Results.LiveTradingResultHandler"
 data-feed-handler = "QuantConnect.Lean.Engine.DataFeeds.LiveTradingDataFeed"
 data-queue-handler = ["QuantConnect.Lean.Engine.DataFeeds.Queues.LiveDataQueue"]
 real-time-handler = "QuantConnect.Lean.Engine.RealTime.LiveTradingRealTimeHandler"
 transaction-handler = "QuantConnect.Lean.Engine.TransactionHandlers.BacktestingTransactionHandler"
-# Unparsed: },
 
 # defines 'live-zerodha' environment
-[parameters.environments.backtesting.live-paper.live-zerodha]
+[environments.live-zerodha]
 live-mode = true
-
 # real brokerage implementations require the BrokerageTransactionHandler
 live-mode-brokerage = "ZerodhaBrokerage"
 data-queue-handler = ["ZerodhaBrokerage"]
-
 setup-handler = "QuantConnect.Lean.Engine.Setup.BrokerageSetupHandler"
 result-handler = "QuantConnect.Lean.Engine.Results.LiveTradingResultHandler"
 data-feed-handler = "QuantConnect.Lean.Engine.DataFeeds.LiveTradingDataFeed"
 real-time-handler = "QuantConnect.Lean.Engine.RealTime.LiveTradingRealTimeHandler"
 transaction-handler = "QuantConnect.Lean.Engine.TransactionHandlers.BrokerageTransactionHandler"
 history-provider = ["BrokerageHistoryProvider", "SubscriptionDataReaderHistoryProvider"]
-# Unparsed: },
 
 # defines 'live-samco' environment
-[parameters.environments.backtesting.live-paper.live-zerodha.live-samco]
+[environments.live-samco]
 live-mode = true
-
-# real brokerage implementations require the BrokerageTransactionHandler
 live-mode-brokerage = "SamcoBrokerage"
 data-queue-handler = ["SamcoBrokerage"]
-
 setup-handler = "QuantConnect.Lean.Engine.Setup.BrokerageSetupHandler"
 result-handler = "QuantConnect.Lean.Engine.Results.LiveTradingResultHandler"
 data-feed-handler = "QuantConnect.Lean.Engine.DataFeeds.LiveTradingDataFeed"
 real-time-handler = "QuantConnect.Lean.Engine.RealTime.LiveTradingRealTimeHandler"
 transaction-handler = "QuantConnect.Lean.Engine.TransactionHandlers.BrokerageTransactionHandler"
 history-provider = ["BrokerageHistoryProvider", "SubscriptionDataReaderHistoryProvider"]
-# Unparsed: },
 
 # defines the 'live-tradier' environment
-[parameters.environments.backtesting.live-paper.live-zerodha.live-samco.live-tradier]
+[environments.live-tradier]
 live-mode = true
-
 # this setting will save tradier access/refresh tokens to a tradier-tokens.txt file
 # that can be read in next time, this makes it easier to start/stop a tradier algorithm
 tradier-save-tokens = true
-
-# real brokerage implementations require the BrokerageTransactionHandler
 live-mode-brokerage = "TradierBrokerage"
 data-queue-handler = ["TradierBrokerage"]
-
 setup-handler = "QuantConnect.Lean.Engine.Setup.BrokerageSetupHandler"
 result-handler = "QuantConnect.Lean.Engine.Results.LiveTradingResultHandler"
 data-feed-handler = "QuantConnect.Lean.Engine.DataFeeds.LiveTradingDataFeed"
 real-time-handler = "QuantConnect.Lean.Engine.RealTime.LiveTradingRealTimeHandler"
 transaction-handler = "QuantConnect.Lean.Engine.TransactionHandlers.BrokerageTransactionHandler"
 history-provider = ["BrokerageHistoryProvider", "SubscriptionDataReaderHistoryProvider"]
-# Unparsed: },
 
 # defines the 'live-interactive' environment
-[parameters.environments.backtesting.live-paper.live-zerodha.live-samco.live-tradier.live-interactive]
+[environments.live-interactive]
 live-mode = true
-
-# real brokerage implementations require the BrokerageTransactionHandler
 live-mode-brokerage = "InteractiveBrokersBrokerage"
 setup-handler = "QuantConnect.Lean.Engine.Setup.BrokerageSetupHandler"
 result-handler = "QuantConnect.Lean.Engine.Results.LiveTradingResultHandler"
@@ -407,13 +389,10 @@ data-queue-handler = ["InteractiveBrokersBrokerage"]
 real-time-handler = "QuantConnect.Lean.Engine.RealTime.LiveTradingRealTimeHandler"
 transaction-handler = "QuantConnect.Lean.Engine.TransactionHandlers.BrokerageTransactionHandler"
 history-provider = ["BrokerageHistoryProvider", "SubscriptionDataReaderHistoryProvider"]
-# Unparsed: },
 
 # defines the 'live-interactive-iqfeed' environment
-[parameters.environments.backtesting.live-paper.live-zerodha.live-samco.live-tradier.live-interactive.live-interactive-iqfeed]
+[environments.live-interactive-iqfeed]
 live-mode = true
-
-# real brokerage implementations require the BrokerageTransactionHandler
 live-mode-brokerage = "InteractiveBrokersBrokerage"
 setup-handler = "QuantConnect.Lean.Engine.Setup.BrokerageSetupHandler"
 result-handler = "QuantConnect.Lean.Engine.Results.LiveTradingResultHandler"
@@ -422,13 +401,10 @@ data-queue-handler = ["QuantConnect.IQFeed.IQFeedDataQueueHandler"]
 real-time-handler = "QuantConnect.Lean.Engine.RealTime.LiveTradingRealTimeHandler"
 transaction-handler = "QuantConnect.Lean.Engine.TransactionHandlers.BrokerageTransactionHandler"
 history-provider = ["QuantConnect.IQFeed.IQFeedDataQueueHandler", "SubscriptionDataReaderHistoryProvider"]
-# Unparsed: },
 
 # defines the 'live-fxcm' environment
-[parameters.environments.backtesting.live-paper.live-zerodha.live-samco.live-tradier.live-interactive.live-interactive-iqfeed.live-fxcm]
+[environments.live-fxcm]
 live-mode = true
-
-# real brokerage implementations require the BrokerageTransactionHandler
 live-mode-brokerage = "FxcmBrokerage"
 data-queue-handler = ["FxcmBrokerage"]
 setup-handler = "QuantConnect.Lean.Engine.Setup.BrokerageSetupHandler"
@@ -437,13 +413,10 @@ data-feed-handler = "QuantConnect.Lean.Engine.DataFeeds.LiveTradingDataFeed"
 real-time-handler = "QuantConnect.Lean.Engine.RealTime.LiveTradingRealTimeHandler"
 transaction-handler = "QuantConnect.Lean.Engine.TransactionHandlers.BrokerageTransactionHandler"
 history-provider = ["BrokerageHistoryProvider", "SubscriptionDataReaderHistoryProvider"]
-# Unparsed: },
 
 # defines the 'live-oanda' environment
-[parameters.environments.backtesting.live-paper.live-zerodha.live-samco.live-tradier.live-interactive.live-interactive-iqfeed.live-fxcm.live-oanda]
+[environments.live-oanda]
 live-mode = true
-
-# real brokerage implementations require the BrokerageTransactionHandler
 live-mode-brokerage = "OandaBrokerage"
 data-queue-handler = ["OandaBrokerage"]
 setup-handler = "QuantConnect.Lean.Engine.Setup.BrokerageSetupHandler"
@@ -452,12 +425,10 @@ data-feed-handler = "QuantConnect.Lean.Engine.DataFeeds.LiveTradingDataFeed"
 real-time-handler = "QuantConnect.Lean.Engine.RealTime.LiveTradingRealTimeHandler"
 transaction-handler = "QuantConnect.Lean.Engine.TransactionHandlers.BrokerageTransactionHandler"
 history-provider = ["BrokerageHistoryProvider", "SubscriptionDataReaderHistoryProvider"]
-# Unparsed: },
 
-[parameters.environments.backtesting.live-paper.live-zerodha.live-samco.live-tradier.live-interactive.live-interactive-iqfeed.live-fxcm.live-oanda.live-coinbase]
+# defines the 'live-coinbase' environment
+[environments.live-coinbase]
 live-mode = true
-
-# real brokerage implementations require the BrokerageTransactionHandler
 live-mode-brokerage = "CoinbaseBrokerage"
 data-queue-handler = ["CoinbaseBrokerage"]
 setup-handler = "QuantConnect.Lean.Engine.Setup.BrokerageSetupHandler"
@@ -466,12 +437,10 @@ data-feed-handler = "QuantConnect.Lean.Engine.DataFeeds.LiveTradingDataFeed"
 real-time-handler = "QuantConnect.Lean.Engine.RealTime.LiveTradingRealTimeHandler"
 transaction-handler = "QuantConnect.Lean.Engine.TransactionHandlers.BrokerageTransactionHandler"
 history-provider = ["BrokerageHistoryProvider", "SubscriptionDataReaderHistoryProvider"]
-# Unparsed: },
 
-[parameters.environments.backtesting.live-paper.live-zerodha.live-samco.live-tradier.live-interactive.live-interactive-iqfeed.live-fxcm.live-oanda.live-coinbase.live-bitfinex]
+# defines the 'live-bitfinex' environment
+[environments.live-bitfinex]
 live-mode = true
-
-# real brokerage implementations require the BrokerageTransactionHandler
 live-mode-brokerage = "BitfinexBrokerage"
 data-queue-handler = ["BitfinexBrokerage"]
 setup-handler = "QuantConnect.Lean.Engine.Setup.BrokerageSetupHandler"
@@ -480,12 +449,10 @@ data-feed-handler = "QuantConnect.Lean.Engine.DataFeeds.LiveTradingDataFeed"
 real-time-handler = "QuantConnect.Lean.Engine.RealTime.LiveTradingRealTimeHandler"
 transaction-handler = "QuantConnect.Lean.Engine.TransactionHandlers.BrokerageTransactionHandler"
 history-provider = ["BrokerageHistoryProvider", "SubscriptionDataReaderHistoryProvider"]
-# Unparsed: },
 
-[parameters.environments.backtesting.live-paper.live-zerodha.live-samco.live-tradier.live-interactive.live-interactive-iqfeed.live-fxcm.live-oanda.live-coinbase.live-bitfinex.live-binance]
+# defines the 'live-binance' environment
+[environments.live-binance]
 live-mode = true
-
-# real brokerage implementations require the BrokerageTransactionHandler
 live-mode-brokerage = "BinanceBrokerage"
 data-queue-handler = ["BinanceBrokerage"]
 setup-handler = "QuantConnect.Lean.Engine.Setup.BrokerageSetupHandler"
@@ -494,12 +461,10 @@ data-feed-handler = "QuantConnect.Lean.Engine.DataFeeds.LiveTradingDataFeed"
 real-time-handler = "QuantConnect.Lean.Engine.RealTime.LiveTradingRealTimeHandler"
 transaction-handler = "QuantConnect.Lean.Engine.TransactionHandlers.BrokerageTransactionHandler"
 history-provider = ["BrokerageHistoryProvider", "SubscriptionDataReaderHistoryProvider"]
-# Unparsed: },
 
-[parameters.environments.backtesting.live-paper.live-zerodha.live-samco.live-tradier.live-interactive.live-interactive-iqfeed.live-fxcm.live-oanda.live-coinbase.live-bitfinex.live-binance.live-futures-binance]
+# defines the 'live-futures-binance' environment
+[environments.live-futures-binance]
 live-mode = true
-
-# real brokerage implementations require the BrokerageTransactionHandler
 live-mode-brokerage = "BinanceFuturesBrokerage"
 data-queue-handler = ["BinanceFuturesBrokerage"]
 setup-handler = "QuantConnect.Lean.Engine.Setup.BrokerageSetupHandler"
@@ -508,12 +473,10 @@ data-feed-handler = "QuantConnect.Lean.Engine.DataFeeds.LiveTradingDataFeed"
 real-time-handler = "QuantConnect.Lean.Engine.RealTime.LiveTradingRealTimeHandler"
 transaction-handler = "QuantConnect.Lean.Engine.TransactionHandlers.BrokerageTransactionHandler"
 history-provider = ["BrokerageHistoryProvider", "SubscriptionDataReaderHistoryProvider"]
-# Unparsed: },
 
-[parameters.environments.backtesting.live-paper.live-zerodha.live-samco.live-tradier.live-interactive.live-interactive-iqfeed.live-fxcm.live-oanda.live-coinbase.live-bitfinex.live-binance.live-futures-binance.live-coin-futures-binance]
+# defines the 'live-coin-futures-binance' environment
+[environments.live-coin-futures-binance]
 live-mode = true
-
-# real brokerage implementations require the BrokerageTransactionHandler
 live-mode-brokerage = "BinanceCoinFuturesBrokerage"
 data-queue-handler = ["BinanceCoinFuturesBrokerage"]
 setup-handler = "QuantConnect.Lean.Engine.Setup.BrokerageSetupHandler"
@@ -522,12 +485,10 @@ data-feed-handler = "QuantConnect.Lean.Engine.DataFeeds.LiveTradingDataFeed"
 real-time-handler = "QuantConnect.Lean.Engine.RealTime.LiveTradingRealTimeHandler"
 transaction-handler = "QuantConnect.Lean.Engine.TransactionHandlers.BrokerageTransactionHandler"
 history-provider = ["BrokerageHistoryProvider", "SubscriptionDataReaderHistoryProvider"]
-# Unparsed: },
 
-[parameters.environments.backtesting.live-paper.live-zerodha.live-samco.live-tradier.live-interactive.live-interactive-iqfeed.live-fxcm.live-oanda.live-coinbase.live-bitfinex.live-binance.live-futures-binance.live-coin-futures-binance.live-binanceus]
+# defines the 'live-binanceus' environment
+[environments.live-binanceus]
 live-mode = true
-
-# real brokerage implementations require the BrokerageTransactionHandler
 live-mode-brokerage = "BinanceUSBrokerage"
 data-queue-handler = ["BinanceUSBrokerage"]
 setup-handler = "QuantConnect.Lean.Engine.Setup.BrokerageSetupHandler"
@@ -536,12 +497,10 @@ data-feed-handler = "QuantConnect.Lean.Engine.DataFeeds.LiveTradingDataFeed"
 real-time-handler = "QuantConnect.Lean.Engine.RealTime.LiveTradingRealTimeHandler"
 transaction-handler = "QuantConnect.Lean.Engine.TransactionHandlers.BrokerageTransactionHandler"
 history-provider = ["BrokerageHistoryProvider", "SubscriptionDataReaderHistoryProvider"]
-# Unparsed: },
 
-[parameters.environments.backtesting.live-paper.live-zerodha.live-samco.live-tradier.live-interactive.live-interactive-iqfeed.live-fxcm.live-oanda.live-coinbase.live-bitfinex.live-binance.live-futures-binance.live-coin-futures-binance.live-binanceus.live-bybit]
+# defines the 'live-bybit' environment
+[environments.live-bybit]
 live-mode = true
-
-# real brokerage implementations require the BrokerageTransactionHandler
 live-mode-brokerage = "BybitBrokerage"
 data-queue-handler = ["BybitBrokerage"]
 setup-handler = "QuantConnect.Lean.Engine.Setup.BrokerageSetupHandler"
@@ -550,12 +509,10 @@ data-feed-handler = "QuantConnect.Lean.Engine.DataFeeds.LiveTradingDataFeed"
 real-time-handler = "QuantConnect.Lean.Engine.RealTime.LiveTradingRealTimeHandler"
 transaction-handler = "QuantConnect.Lean.Engine.TransactionHandlers.BrokerageTransactionHandler"
 history-provider = ["BrokerageHistoryProvider", "SubscriptionDataReaderHistoryProvider"]
-# Unparsed: },
 
-[parameters.environments.backtesting.live-paper.live-zerodha.live-samco.live-tradier.live-interactive.live-interactive-iqfeed.live-fxcm.live-oanda.live-coinbase.live-bitfinex.live-binance.live-futures-binance.live-coin-futures-binance.live-binanceus.live-bybit.live-trade-station]
+# defines the 'live-trade-station' environment
+[environments.live-trade-station]
 live-mode = true
-
-# real brokerage implementations require the BrokerageTransactionHandler
 live-mode-brokerage = "TradeStationBrokerage"
 data-queue-handler = ["TradeStationBrokerage"]
 setup-handler = "QuantConnect.Lean.Engine.Setup.BrokerageSetupHandler"
@@ -564,12 +521,10 @@ data-feed-handler = "QuantConnect.Lean.Engine.DataFeeds.LiveTradingDataFeed"
 real-time-handler = "QuantConnect.Lean.Engine.RealTime.LiveTradingRealTimeHandler"
 transaction-handler = "QuantConnect.Lean.Engine.TransactionHandlers.BrokerageTransactionHandler"
 history-provider = ["BrokerageHistoryProvider", "SubscriptionDataReaderHistoryProvider"]
-# Unparsed: },
 
-[parameters.environments.backtesting.live-paper.live-zerodha.live-samco.live-tradier.live-interactive.live-interactive-iqfeed.live-fxcm.live-oanda.live-coinbase.live-bitfinex.live-binance.live-futures-binance.live-coin-futures-binance.live-binanceus.live-bybit.live-trade-station.live-alpaca]
+# defines the 'live-alpaca' environment
+[environments.live-alpaca]
 live-mode = true
-
-# real brokerage implementations require the BrokerageTransactionHandler
 live-mode-brokerage = "AlpacaBrokerage"
 data-queue-handler = ["AlpacaBrokerage"]
 setup-handler = "QuantConnect.Lean.Engine.Setup.BrokerageSetupHandler"
@@ -578,12 +533,10 @@ data-feed-handler = "QuantConnect.Lean.Engine.DataFeeds.LiveTradingDataFeed"
 real-time-handler = "QuantConnect.Lean.Engine.RealTime.LiveTradingRealTimeHandler"
 transaction-handler = "QuantConnect.Lean.Engine.TransactionHandlers.BrokerageTransactionHandler"
 history-provider = ["BrokerageHistoryProvider", "SubscriptionDataReaderHistoryProvider"]
-# Unparsed: },
 
-[parameters.environments.backtesting.live-paper.live-zerodha.live-samco.live-tradier.live-interactive.live-interactive-iqfeed.live-fxcm.live-oanda.live-coinbase.live-bitfinex.live-binance.live-futures-binance.live-coin-futures-binance.live-binanceus.live-bybit.live-trade-station.live-alpaca.live-futures-bybit]
+# defines the 'live-futures-bybit' environment
+[environments.live-futures-bybit]
 live-mode = true
-
-# real brokerage implementations require the BrokerageTransactionHandler
 live-mode-brokerage = "BybitFuturesBrokerage"
 data-queue-handler = ["BybitFuturesBrokerage"]
 setup-handler = "QuantConnect.Lean.Engine.Setup.BrokerageSetupHandler"
@@ -592,13 +545,10 @@ data-feed-handler = "QuantConnect.Lean.Engine.DataFeeds.LiveTradingDataFeed"
 real-time-handler = "QuantConnect.Lean.Engine.RealTime.LiveTradingRealTimeHandler"
 transaction-handler = "QuantConnect.Lean.Engine.TransactionHandlers.BrokerageTransactionHandler"
 history-provider = ["BrokerageHistoryProvider", "SubscriptionDataReaderHistoryProvider"]
-# Unparsed: },
 
 # defines the 'live-trading-technologies' environment
-[parameters.environments.backtesting.live-paper.live-zerodha.live-samco.live-tradier.live-interactive.live-interactive-iqfeed.live-fxcm.live-oanda.live-coinbase.live-bitfinex.live-binance.live-futures-binance.live-coin-futures-binance.live-binanceus.live-bybit.live-trade-station.live-alpaca.live-futures-bybit.live-trading-technologies]
+[environments.live-trading-technologies]
 live-mode = true
-
-# real brokerage implementations require the BrokerageTransactionHandler
 live-mode-brokerage = "TradingTechnologiesBrokerage"
 data-queue-handler = ["TradingTechnologiesBrokerage"]
 setup-handler = "QuantConnect.Lean.Engine.Setup.BrokerageSetupHandler"
@@ -606,13 +556,10 @@ result-handler = "QuantConnect.Lean.Engine.Results.LiveTradingResultHandler"
 data-feed-handler = "QuantConnect.Lean.Engine.DataFeeds.LiveTradingDataFeed"
 real-time-handler = "QuantConnect.Lean.Engine.RealTime.LiveTradingRealTimeHandler"
 transaction-handler = "QuantConnect.Lean.Engine.TransactionHandlers.BrokerageTransactionHandler"
-# Unparsed: },
 
 # defines the 'live-kraken' environment
-[parameters.environments.backtesting.live-paper.live-zerodha.live-samco.live-tradier.live-interactive.live-interactive-iqfeed.live-fxcm.live-oanda.live-coinbase.live-bitfinex.live-binance.live-futures-binance.live-coin-futures-binance.live-binanceus.live-bybit.live-trade-station.live-alpaca.live-futures-bybit.live-trading-technologies.live-kraken]
+[environments.live-kraken]
 live-mode = true
-
-# real brokerage implementations require the BrokerageTransactionHandler
 live-mode-brokerage = "KrakenBrokerage"
 data-queue-handler = ["KrakenBrokerage"]
 setup-handler = "QuantConnect.Lean.Engine.Setup.BrokerageSetupHandler"
@@ -621,13 +568,10 @@ data-feed-handler = "QuantConnect.Lean.Engine.DataFeeds.LiveTradingDataFeed"
 real-time-handler = "QuantConnect.Lean.Engine.RealTime.LiveTradingRealTimeHandler"
 transaction-handler = "QuantConnect.Lean.Engine.TransactionHandlers.BrokerageTransactionHandler"
 history-provider = ["BrokerageHistoryProvider", "SubscriptionDataReaderHistoryProvider"]
-# Unparsed: },
 
 # defines the 'live-ftx' environment
-[parameters.environments.backtesting.live-paper.live-zerodha.live-samco.live-tradier.live-interactive.live-interactive-iqfeed.live-fxcm.live-oanda.live-coinbase.live-bitfinex.live-binance.live-futures-binance.live-coin-futures-binance.live-binanceus.live-bybit.live-trade-station.live-alpaca.live-futures-bybit.live-trading-technologies.live-kraken.live-ftx]
+[environments.live-ftx]
 live-mode = true
-
-# real brokerage implementations require the BrokerageTransactionHandler
 live-mode-brokerage = "QuantConnect.FTXBrokerage.FTXBrokerage"
 data-queue-handler = ["QuantConnect.FTXBrokerage.FTXBrokerage"]
 setup-handler = "QuantConnect.Lean.Engine.Setup.BrokerageSetupHandler"
@@ -636,12 +580,10 @@ data-feed-handler = "QuantConnect.Lean.Engine.DataFeeds.LiveTradingDataFeed"
 real-time-handler = "QuantConnect.Lean.Engine.RealTime.LiveTradingRealTimeHandler"
 transaction-handler = "QuantConnect.Lean.Engine.TransactionHandlers.BrokerageTransactionHandler"
 history-provider = ["BrokerageHistoryProvider", "SubscriptionDataReaderHistoryProvider"]
-# Unparsed: },
 
-[parameters.environments.backtesting.live-paper.live-zerodha.live-samco.live-tradier.live-interactive.live-interactive-iqfeed.live-fxcm.live-oanda.live-coinbase.live-bitfinex.live-binance.live-futures-binance.live-coin-futures-binance.live-binanceus.live-bybit.live-trade-station.live-alpaca.live-futures-bybit.live-trading-technologies.live-kraken.live-ftx.live-exante]
+# defines the 'live-exante' environment
+[environments.live-exante]
 live-mode = true
-
-# real brokerage implementations require the BrokerageTransactionHandler
 live-mode-brokerage = "QuantConnect.ExanteBrokerage.ExanteBrokerage"
 data-queue-handler = ["QuantConnect.ExanteBrokerage.ExanteBrokerage"]
 setup-handler = "QuantConnect.Lean.Engine.Setup.BrokerageSetupHandler"
@@ -650,13 +592,10 @@ data-feed-handler = "QuantConnect.Lean.Engine.DataFeeds.LiveTradingDataFeed"
 real-time-handler = "QuantConnect.Lean.Engine.RealTime.LiveTradingRealTimeHandler"
 transaction-handler = "QuantConnect.Lean.Engine.TransactionHandlers.BrokerageTransactionHandler"
 history-provider = "BrokerageHistoryProvider"
-# Unparsed: },
 
 # defines the 'live-ftxus' environment
-[parameters.environments.backtesting.live-paper.live-zerodha.live-samco.live-tradier.live-interactive.live-interactive-iqfeed.live-fxcm.live-oanda.live-coinbase.live-bitfinex.live-binance.live-futures-binance.live-coin-futures-binance.live-binanceus.live-bybit.live-trade-station.live-alpaca.live-futures-bybit.live-trading-technologies.live-kraken.live-ftx.live-exante.live-ftxus]
+[environments.live-ftxus]
 live-mode = true
-
-# real brokerage implementations require the BrokerageTransactionHandler
 live-mode-brokerage = "QuantConnect.FTXBrokerage.FTXUSBrokerage"
 data-queue-handler = ["QuantConnect.FTXBrokerage.FTXUSBrokerage"]
 setup-handler = "QuantConnect.Lean.Engine.Setup.BrokerageSetupHandler"
@@ -665,12 +604,10 @@ data-feed-handler = "QuantConnect.Lean.Engine.DataFeeds.LiveTradingDataFeed"
 real-time-handler = "QuantConnect.Lean.Engine.RealTime.LiveTradingRealTimeHandler"
 transaction-handler = "QuantConnect.Lean.Engine.TransactionHandlers.BrokerageTransactionHandler"
 history-provider = ["BrokerageHistoryProvider", "SubscriptionDataReaderHistoryProvider"]
-# Unparsed: },
 
-[parameters.environments.backtesting.live-paper.live-zerodha.live-samco.live-tradier.live-interactive.live-interactive-iqfeed.live-fxcm.live-oanda.live-coinbase.live-bitfinex.live-binance.live-futures-binance.live-coin-futures-binance.live-binanceus.live-bybit.live-trade-station.live-alpaca.live-futures-bybit.live-trading-technologies.live-kraken.live-ftx.live-exante.live-ftxus.live-wolverine]
+# defines the 'live-wolverine' environment
+[environments.live-wolverine]
 live-mode = true
-
-# real brokerage implementations require the BrokerageTransactionHandler
 live-mode-brokerage = "WolverineBrokerage"
 history-provider = ["SubscriptionDataReaderHistoryProvider"]
 setup-handler = "QuantConnect.Lean.Engine.Setup.BrokerageSetupHandler"
@@ -678,12 +615,10 @@ result-handler = "QuantConnect.Lean.Engine.Results.LiveTradingResultHandler"
 data-feed-handler = "QuantConnect.Lean.Engine.DataFeeds.LiveTradingDataFeed"
 real-time-handler = "QuantConnect.Lean.Engine.RealTime.LiveTradingRealTimeHandler"
 transaction-handler = "QuantConnect.Lean.Engine.TransactionHandlers.BrokerageTransactionHandler"
-# Unparsed: },
 
-[parameters.environments.backtesting.live-paper.live-zerodha.live-samco.live-tradier.live-interactive.live-interactive-iqfeed.live-fxcm.live-oanda.live-coinbase.live-bitfinex.live-binance.live-futures-binance.live-coin-futures-binance.live-binanceus.live-bybit.live-trade-station.live-alpaca.live-futures-bybit.live-trading-technologies.live-kraken.live-ftx.live-exante.live-ftxus.live-wolverine.live-charlesschwab]
+# defines the 'live-charlesschwab' environment
+[environments.live-charlesschwab]
 live-mode = true
-
-# real brokerage implementations require the BrokerageTransactionHandler
 live-mode-brokerage = "CharlesSchwabBrokerage"
 data-queue-handler = ["CharlesSchwabBrokerage"]
 setup-handler = "QuantConnect.Lean.Engine.Setup.BrokerageSetupHandler"
@@ -692,12 +627,10 @@ data-feed-handler = "QuantConnect.Lean.Engine.DataFeeds.LiveTradingDataFeed"
 real-time-handler = "QuantConnect.Lean.Engine.RealTime.LiveTradingRealTimeHandler"
 transaction-handler = "QuantConnect.Lean.Engine.TransactionHandlers.BrokerageTransactionHandler"
 history-provider = ["BrokerageHistoryProvider", "SubscriptionDataReaderHistoryProvider"]
-# Unparsed: },
 
-[parameters.environments.backtesting.live-paper.live-zerodha.live-samco.live-tradier.live-interactive.live-interactive-iqfeed.live-fxcm.live-oanda.live-coinbase.live-bitfinex.live-binance.live-futures-binance.live-coin-futures-binance.live-binanceus.live-bybit.live-trade-station.live-alpaca.live-futures-bybit.live-trading-technologies.live-kraken.live-ftx.live-exante.live-ftxus.live-wolverine.live-charlesschwab.live-tastytrade]
+# defines the 'live-tastytrade' environment
+[environments.live-tastytrade]
 live-mode = true
-
-# real brokerage implementations require the BrokerageTransactionHandler
 live-mode-brokerage = "TastytradeBrokerage"
 data-queue-handler = ["TastytradeBrokerage"]
 setup-handler = "QuantConnect.Lean.Engine.Setup.BrokerageSetupHandler"
@@ -706,12 +639,10 @@ data-feed-handler = "QuantConnect.Lean.Engine.DataFeeds.LiveTradingDataFeed"
 real-time-handler = "QuantConnect.Lean.Engine.RealTime.LiveTradingRealTimeHandler"
 transaction-handler = "QuantConnect.Lean.Engine.TransactionHandlers.BrokerageTransactionHandler"
 history-provider = ["BrokerageHistoryProvider", "SubscriptionDataReaderHistoryProvider"]
-# Unparsed: },
 
-[parameters.environments.backtesting.live-paper.live-zerodha.live-samco.live-tradier.live-interactive.live-interactive-iqfeed.live-fxcm.live-oanda.live-coinbase.live-bitfinex.live-binance.live-futures-binance.live-coin-futures-binance.live-binanceus.live-bybit.live-trade-station.live-alpaca.live-futures-bybit.live-trading-technologies.live-kraken.live-ftx.live-exante.live-ftxus.live-wolverine.live-charlesschwab.live-tastytrade.live-rbi]
+# defines the 'live-rbi' environment
+[environments.live-rbi]
 live-mode = true
-
-# real brokerage implementations require the BrokerageTransactionHandler
 live-mode-brokerage = "RBIBrokerage"
 data-queue-handler = ["QuantConnect.Lean.Engine.DataFeeds.Queues.LiveDataQueue"]
 history-provider = ["SubscriptionDataReaderHistoryProvider"]
@@ -720,13 +651,10 @@ result-handler = "QuantConnect.Lean.Engine.Results.LiveTradingResultHandler"
 data-feed-handler = "QuantConnect.Lean.Engine.DataFeeds.LiveTradingDataFeed"
 real-time-handler = "QuantConnect.Lean.Engine.RealTime.LiveTradingRealTimeHandler"
 transaction-handler = "QuantConnect.Lean.Engine.TransactionHandlers.BrokerageTransactionHandler"
-# Unparsed: },
 
 # defines the 'live-eze' environment
-[parameters.environments.backtesting.live-paper.live-zerodha.live-samco.live-tradier.live-interactive.live-interactive-iqfeed.live-fxcm.live-oanda.live-coinbase.live-bitfinex.live-binance.live-futures-binance.live-coin-futures-binance.live-binanceus.live-bybit.live-trade-station.live-alpaca.live-futures-bybit.live-trading-technologies.live-kraken.live-ftx.live-exante.live-ftxus.live-wolverine.live-charlesschwab.live-tastytrade.live-rbi.live-eze]
+[environments.live-eze]
 live-mode = true
-
-# real brokerage implementations require the BrokerageTransactionHandler
 live-mode-brokerage = "QuantConnect.EzeBrokerage.EzeBrokerage"
 data-queue-handler = ["QuantConnect.EzeBrokerage.EzeBrokerage"]
 setup-handler = "QuantConnect.Lean.Engine.Setup.BrokerageSetupHandler"

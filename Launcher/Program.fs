@@ -1,7 +1,6 @@
 ﻿namespace Launcher
 
 open System
-open System.Collections
 open System.IO
 open System.Diagnostics
 open System.Text.Json
@@ -10,58 +9,35 @@ open Argu
 open Serilog
 
 // ======================================================
-// CLI 定义
+// CLI 定义（只保留 Toml 配置，不再支持 Json/合并/补丁）
 // ======================================================
 type BacktestArgs =
-    | [<Mandatory; AltCommandLine("-t")>] AlgoTypeName of string
-    | [<AltCommandLine("-d")>] AlgoDll of path: string
-    | [<AltCommandLine("-L")>] AlgoLanguage of string
-    | [<AltCommandLine("-s")>] Start of string
-    | [<AltCommandLine("-e")>] End of string
-    | [<AltCommandLine("-T")>] ConfigTemplate of path: string
-    | [<AltCommandLine("-O")>] Overrides of path: string
-    | [<AltCommandLine("-H")>] HistoryProvider of string
+    | [<Mandatory; AltCommandLine("-T")>] ConfigToml of string
 
     interface IArgParserTemplate with
         member x.Usage =
             match x with
-            | AlgoTypeName _ -> "算法类型名（命名空间+类名，如 Algorithm.MyAlgo）。"
-            | AlgoDll _ -> "算法 DLL 路径（若不指定，会自动在 Algorithm/bin/**/ 下查找 Algorithm.dll）。"
-            | AlgoLanguage _ -> "算法语言（默认 FSharp，可填 CSharp/Python/FSharp）。"
-            | Start _ -> "回测起始日期（如 2020-01-01）。"
-            | End _ -> "回测结束日期（如 2020-12-31）。"
-            | ConfigTemplate _ -> "配置模板路径（支持 .toml/.json；默认尝试 <lean>/Launcher/config.json）。"
-            | Overrides _ -> "覆盖配置的文件（支持 .toml/.json；合并时后者覆盖前者）。"
-            | HistoryProvider _ -> "自定义历史数据提供者类型全名（默认 Lean.Extension.SqliteHistoryProvider）。"
+            | ConfigToml _ -> "TOML 配置文件路径，或只写文件名（不含路径），将从当前工作目录查找同名 .toml。"
 
 type LiveArgs =
-    | [<Mandatory; AltCommandLine("-t")>] AlgoTypeName of string
-    | [<AltCommandLine("-d")>] AlgoDll of path: string
-    | [<AltCommandLine("-L")>] AlgoLanguage of string
-    | [<AltCommandLine("-T")>] ConfigTemplate of path: string
-    | [<AltCommandLine("-O")>] Overrides of path: string
-    | [<AltCommandLine("-b")>] Brokerage of string
-    | [<AltCommandLine("-q")>] DataQueueHandler of string
-    // 常见凭证直传（也可以只放在 overrides 里）
-    | [<AltCommandLine("--api-key")>] ApiKey of string
-    | [<AltCommandLine("--api-secret")>] ApiSecret of string
-    | [<AltCommandLine("--ws-url")>] WsUrl of string
-    | [<AltCommandLine("--rest-url")>] RestUrl of string
+    | [<Mandatory; AltCommandLine("-T")>] ConfigToml of string
+    | [<AltCommandLine("-b")>] Brokerage_IGNORED of string
+    | [<AltCommandLine("-q")>] DataQueueHandler_IGNORED of string
+    | [<AltCommandLine("--api-key")>] ApiKey_IGNORED of string
+    | [<AltCommandLine("--api-secret")>] ApiSecret_IGNORED of string
+    | [<AltCommandLine("--ws-url")>] WsUrl_IGNORED of string
+    | [<AltCommandLine("--rest-url")>] RestUrl_IGNORED of string
 
     interface IArgParserTemplate with
         member x.Usage =
             match x with
-            | AlgoTypeName _ -> "算法类型名（命名空间+类名，如 Algorithm.MyLiveAlgo）。"
-            | AlgoDll _ -> "算法 DLL 路径（若不指定，会自动在 Algorithm/bin/**/ 下查找 Algorithm.dll）。"
-            | AlgoLanguage _ -> "算法语言（默认 FSharp）。"
-            | ConfigTemplate _ -> "配置模板路径（支持 .toml/.json）。"
-            | Overrides _ -> "覆盖配置的文件（支持 .toml/.json）。"
-            | Brokerage _ -> "Brokerage 名称（默认 UnikoCrypto）。"
-            | DataQueueHandler _ -> "实时数据队列处理器类型全名（默认 YourCompany.Lean.UnikoCryptoDataQueueHandler）。"
-            | ApiKey _ -> "API Key（也可放在 overrides）。"
-            | ApiSecret _ -> "API Secret（也可放在 overrides）。"
-            | WsUrl _ -> "WebSocket 端点（也可放在 overrides）。"
-            | RestUrl _ -> "REST 端点（也可放在 overrides）。"
+            | ConfigToml _ -> "TOML 配置文件路径，或只写文件名（不含路径），将从当前工作目录查找同名 .toml。"
+            | Brokerage_IGNORED _ -> "[已忽略] 仅为兼容旧参数，当前不再对 TOML 打补丁。"
+            | DataQueueHandler_IGNORED _ -> "[已忽略] 仅为兼容旧参数，当前不再对 TOML 打补丁。"
+            | ApiKey_IGNORED _ -> "[已忽略]"
+            | ApiSecret_IGNORED _ -> "[已忽略]"
+            | WsUrl_IGNORED _ -> "[已忽略]"
+            | RestUrl_IGNORED _ -> "[已忽略]"
 
 type CLIArgs =
     // 通用
@@ -93,72 +69,19 @@ type CLIArgs =
             | PluginBin _ -> "已构建好的插件 bin 目录（可多次传入，如 src/Plugin/bin/Release）。"
             | PluginsOut _ -> "运行目录内插件输出相对路径（默认 plugins）。"
             | LeanLauncherDll _ -> "显式指定 QuantConnect.Lean.Launcher.dll 路径。"
-            | Backtest _ -> "启动回测。"
-            | Live _ -> "启动实盘。"
+            | Backtest _ -> "启动回测（只接受 TOML 配置）。"
+            | Live _ -> "启动实盘（只接受 TOML 配置）。"
             | Build -> "仅构建（Algorithm、Lean.Launcher、插件）。"
             | Hello -> "打印探测信息。"
 
 // ======================================================
-// JSON 工具
+// JSON 工具（仅用于写出 Lean 读取的 config.json）
 // ======================================================
 module Json =
     let options =
         let o = JsonSerializerOptions(WriteIndented = true)
         o.DefaultIgnoreCondition <- JsonIgnoreCondition.WhenWritingNull
         o
-
-    let parseFile (path: string) =
-        if File.Exists path then
-            use s = File.OpenRead path
-            JsonDocument.Parse(s).RootElement.Clone()
-        else
-            JsonDocument.Parse("{}").RootElement.Clone()
-
-    let parseString (s: string) =
-        JsonDocument.Parse(s).RootElement.Clone()
-
-    let private elementFromDict (dict: System.Collections.Generic.IDictionary<string, JsonElement>) =
-        use ms = new MemoryStream()
-        use writer = new Utf8JsonWriter(ms)
-        writer.WriteStartObject()
-
-        for KeyValue(k, v) in dict do
-            writer.WritePropertyName(k)
-            v.WriteTo(writer)
-
-        writer.WriteEndObject()
-        writer.Flush()
-        JsonDocument.Parse(ms.ToArray()).RootElement.Clone()
-
-    let rec merge (a: JsonElement) (b: JsonElement) =
-        if a.ValueKind <> JsonValueKind.Object then
-            b
-        elif b.ValueKind <> JsonValueKind.Object then
-            b
-        else
-            let dict = Generic.Dictionary<string, JsonElement>()
-
-            for p in a.EnumerateObject() do
-                dict[p.Name] <- p.Value
-
-            for p in b.EnumerateObject() do
-                match dict.TryGetValue p.Name with
-                | true, oldv when
-                    oldv.ValueKind = JsonValueKind.Object
-                    && p.Value.ValueKind = JsonValueKind.Object
-                    ->
-                    dict[p.Name] <- merge oldv p.Value
-                | _ -> dict[p.Name] <- p.Value
-
-            elementFromDict dict
-
-    let addPairs (pairs: (string * string) list) =
-        let dict = Generic.Dictionary<string, JsonElement>()
-
-        for (k, v) in pairs do
-            dict[k] <- JsonDocument.Parse($"\"{v}\"").RootElement.Clone()
-
-        elementFromDict dict
 
     let write (path: string) (je: JsonElement) =
         use fs = File.Create path
@@ -192,22 +115,17 @@ module ConfigParse =
             | null -> w.WriteNullValue()
             | :? string as s -> w.WriteStringValue(s)
             | :? bool as b -> w.WriteBooleanValue(b)
-            | :? int8
-            | :? int16
-            | :? int
-            | :? int64
-            | :? uint8
-            | :? uint16
-            | :? uint32
-            | :? uint64
-            | :? float
-            | :? double
-            | :? decimal ->
-                match v with
-                | :? decimal as d -> w.WriteNumberValue(d)
-                | :? double as d -> w.WriteNumberValue(d)
-                | _ -> w.WriteNumberValue(Convert.ToDouble v)
-            | :? IDictionary as dict ->
+            | :? int8 as i -> w.WriteNumberValue(int i)
+            | :? int16 as i -> w.WriteNumberValue(int i)
+            | :? int as i -> w.WriteNumberValue(i)
+            | :? int64 as i -> w.WriteNumberValue(i)
+            | :? uint8 as i -> w.WriteNumberValue(int i)
+            | :? uint16 as i -> w.WriteNumberValue(int i)
+            | :? uint32 as i -> w.WriteNumberValue(uint32 i)
+            | :? uint64 as i -> w.WriteNumberValue(uint64 i)
+            | :? double as d -> w.WriteNumberValue(d)
+            | :? decimal as d -> w.WriteNumberValue(d)
+            | :? System.Collections.IDictionary as dict ->
                 w.WriteStartObject()
 
                 for key in dict.Keys do
@@ -216,13 +134,14 @@ module ConfigParse =
                     write w (dict.[key])
 
                 w.WriteEndObject()
-            | :? IEnumerable as seq when not (v :? string) ->
+            | :? System.Collections.IEnumerable as seq when not (v :? string) ->
                 w.WriteStartArray()
 
                 for item in seq do
                     write w item
 
                 w.WriteEndArray()
+            | :? DateTimeOffset as dto -> w.WriteStringValue(dto.UtcDateTime.ToString("O"))
             | :? DateTime as dt -> w.WriteStringValue(dt.ToUniversalTime().ToString("O"))
             | _ -> w.WriteStringValue(v.ToString())
 
@@ -232,47 +151,84 @@ module ConfigParse =
         w.Flush()
         JsonDocument.Parse(ms.ToArray()).RootElement.Clone()
 
-    let fromTomlFile (path: string) : JsonElement =
-        let text = File.ReadAllText path |> expandEnv
-        let model = Toml.ToModel text
+    let fromTomlText (text: string) : JsonElement =
+        // 环境变量占位展开
+        let text = expandEnv text
+        // Toml -> 动态模型
+        let model = Toml.ToModel(text)
 
+        // 递归把 TomlTable/TomlArray 转成普通 .NET 值
         let rec tomlToObj (t: obj) : obj =
             match t with
             | :? TomlTable as tbl ->
-                let d = Generic.Dictionary<string, obj>()
+                let d = System.Collections.Generic.Dictionary<string, obj>()
 
                 for KeyValue(k, v) in tbl do
                     d.[k] <- tomlToObj v
 
                 d :> obj
             | :? TomlArray as arr ->
-                let l = Generic.List<obj>()
+                let l = System.Collections.Generic.List<obj>()
 
                 for v in arr do
                     l.Add(tomlToObj v)
 
                 l :> obj
-            // 叶子类型，直接返回 .NET 值
-            | :? string as s -> s :> obj
-            | :? bool as b -> b :> obj
-            | :? int64 as i -> i :> obj
-            | :? double as d -> d :> obj
-            | :? DateTimeOffset as dt -> dt :> obj
+            // 叶子：Tomlyn 已经给了原生 CLR 类型
+            | :? string
+            | :? bool
+            | :? int64
+            | :? double
+            | :? decimal
+            | :? DateTime
+            | :? DateTimeOffset -> t
             | null -> null
-            | _ -> t // 兜底：原样返回
+            | _ -> t
 
         toJsonElement (tomlToObj model)
 
-    /// 统一入口：支持 .toml / .json
-    let fromAnyFile (path: string) : JsonElement =
-        match Path.GetExtension(path).ToLowerInvariant() with
-        | ".toml" -> fromTomlFile path
-        | ".json" -> Json.parseFile path
-        | ext -> failwithf "不支持的配置文件类型：%s（仅支持 .toml / .json）" ext
+    let fromTomlFile (path: string) : JsonElement =
+        let text = File.ReadAllText path
+        fromTomlText text
 
 // ======================================================
-// 进程与路径工具
+// 路径解析 & 进程工具
 // ======================================================
+module Paths =
+    let norm (p: string) = Path.GetFullPath p
+
+    let ensureDir (p: string) =
+        Directory.CreateDirectory(p) |> ignore
+        p
+
+    let guessRepoRoot () = Directory.GetCurrentDirectory() |> norm
+
+    /// 解析 -T 传入的参数：
+    /// - 如果包含路径分隔符或以 .toml 结尾，则按“路径”解析；
+    /// - 否则按“文件名”，在 当前工作目录 下寻找 `<name>.toml`
+    let resolveTomlPath (input: string) =
+        let hasSep =
+            input.Contains(Path.DirectorySeparatorChar)
+            || input.Contains(Path.AltDirectorySeparatorChar)
+
+        let isToml = input.EndsWith(".toml", StringComparison.OrdinalIgnoreCase)
+
+        if hasSep || isToml then
+            let p = if isToml then input else input + ".toml"
+
+            if File.Exists p then
+                Path.GetFullPath p
+            else
+                failwithf "未找到 TOML 配置文件：%s" p
+        else
+            // 仅名字：从 当前工作目录 查找
+            let p = Path.Combine(Directory.GetCurrentDirectory(), input + ".toml")
+
+            if File.Exists p then
+                Path.GetFullPath p
+            else
+                failwithf "未在当前工作目录找到 TOML 配置文件：%s" p
+
 module Proc =
     let run (workingDir: string) (exe: string) (args: string) =
         let psi = ProcessStartInfo()
@@ -302,27 +258,8 @@ module Proc =
         else
             -1
 
-module Paths =
-    let norm (p: string) = Path.GetFullPath p
-
-    let ensureDir (p: string) =
-        Directory.CreateDirectory(p) |> ignore
-        p
-
-    let guessRepoRoot () = Directory.GetCurrentDirectory() |> norm
-
-    let findFirst (root: string) (pattern: string) =
-        if Directory.Exists root then
-            Directory.GetFiles(root, pattern, SearchOption.AllDirectories) |> Array.tryHead
-        else
-            None
-
-    let copyFileTo (src: string) (dstDir: string) =
-        let file = Path.GetFileName src
-        File.Copy(src, Path.Combine(dstDir, file), true)
-
 // ======================================================
-// 构建、拷贝插件与 Lean/Algorithm 探测
+// 构建/探测/拷贝插件 & Lean 启动
 // ======================================================
 module Build =
     open Proc
@@ -354,23 +291,19 @@ module Build =
         for p in pluginProjects do
             buildProject repo p
 
-    let findAlgoDll (algorithmDir: string) (cliDll: string option) =
-        match cliDll with
-        | Some p when File.Exists p -> p
-        | _ ->
-            let bin = Path.Combine(algorithmDir, "bin")
-
-            match Paths.findFirst bin "Algorithm.dll" with
-            | Some p -> p
-            | None -> failwith "未找到 Algorithm.dll，请用 -d 指定或先构建 Algorithm。"
-
     let findLeanLauncherDll (leanDir: string) (cliDll: string option) =
         match cliDll with
         | Some p when File.Exists p -> p
         | _ ->
             let root = Path.Combine(leanDir, "Launcher", "bin")
 
-            match Paths.findFirst root "QuantConnect.Lean.Launcher.dll" with
+            let rec findFirst (root: string) (pattern: string) =
+                if Directory.Exists root then
+                    Directory.GetFiles(root, pattern, SearchOption.AllDirectories) |> Array.tryHead
+                else
+                    None
+
+            match findFirst root "QuantConnect.Lean.Launcher.dll" with
             | Some p -> p
             | None -> failwith "未找到 QuantConnect.Lean.Launcher.dll，请先构建 Lean 子模块的 Launcher。"
 
@@ -409,93 +342,6 @@ module Build =
                     || fi.Name.EndsWith(".deps.json", StringComparison.OrdinalIgnoreCase)
                     || fi.Name.EndsWith(".runtimeconfig.json", StringComparison.OrdinalIgnoreCase))
 
-// ======================================================
-// 配置生成（模板+补丁+overrides）
-// ======================================================
-module ConfigGen =
-    open Json
-    open ConfigParse
-
-    let loadTemplate (leanDir: string) (tpl: string option) =
-        match tpl with
-        | Some p when File.Exists p -> fromAnyFile p
-        | _ ->
-            let candidate = Path.Combine(leanDir, "Launcher", "config.json")
-
-            if File.Exists candidate then
-                parseFile candidate
-            else
-                parseString
-                    """{
-                  "environment":"backtesting",
-                  "live-mode": false,
-                  "algorithm-type-name": "BasicTemplateAlgorithm",
-                  "algorithm-language": "CSharp",
-                  "algorithm-location": "QuantConnect.Algorithm.CSharp.dll",
-                  "data-folder": "data"
-                }"""
-
-    let patchCommon (algoType: string) (algoLang: string) (algoDll: string) =
-        addPairs
-            [ "algorithm-type-name", algoType
-              "algorithm-language", algoLang
-              "algorithm-location", (algoDll.Replace("\\", "\\\\"))
-              "plugin-directory", "./plugins"
-              "composer-dll-directory", "./plugins" ]
-
-    let patchBacktest (historyProvider: string) (startOpt: string option) (endOpt: string option) =
-        let basePairs =
-            [ "environment", "backtesting"
-              "live-mode", "false"
-              "history-provider", historyProvider ]
-
-        let baseCfg = addPairs basePairs
-
-        let withStart =
-            match startOpt with
-            | Some s -> merge baseCfg (parseString (sprintf """{"start-date":"%s"}""" s))
-            | None -> baseCfg
-
-        match endOpt with
-        | Some e -> merge withStart (parseString (sprintf """{"end-date":"%s"}""" e))
-        | None -> withStart
-
-    let patchLive
-        (brokerage: string)
-        (dqHandler: string)
-        (apiKey: string option)
-        (apiSecret: string option)
-        (wsUrl: string option)
-        (restUrl: string option)
-        =
-        let baseCfg =
-            addPairs
-                [ "environment", "live"
-                  "live-mode", "true"
-                  "brokerage", brokerage
-                  "data-queue-handler", dqHandler ]
-
-        let add k v (acc: JsonElement) =
-            match v with
-            | Some s -> merge acc (addPairs [ k, s ])
-            | None -> acc
-
-        baseCfg
-        |> add "uniko-api-key" apiKey
-        |> add "uniko-api-secret" apiSecret
-        |> add "uniko-ws-url" wsUrl
-        |> add "uniko-rest-url" restUrl
-
-    let finalize (tpl: JsonElement) (commonPatch: JsonElement) (modePatch: JsonElement) (overrides: string option) =
-        let merged = tpl |> merge commonPatch |> merge modePatch
-
-        match overrides with
-        | Some p when File.Exists p -> merge merged (fromAnyFile p)
-        | _ -> merged
-
-// ======================================================
-// 运行 Lean
-// ======================================================
 module Runner =
     open Proc
 
@@ -509,13 +355,13 @@ module Runner =
         Log.Information("运行完成，产出目录：{RunDir}", runDir)
 
 // ======================================================
-// Main
+// Main（不再对 TOML 做任何补丁/合并）
 // ======================================================
 module Main =
     open Paths
     open Build
-    open ConfigGen
     open Runner
+    open ConfigParse
 
     [<EntryPoint>]
     let main argv =
@@ -553,31 +399,22 @@ module Main =
                 if not skipBuild then
                     buildAll repo algoDir leanDir pluginProjects
 
-                let algoDll = findAlgoDll algoDir (sub.TryGetResult BacktestArgs.AlgoDll)
                 let launcherDll = findLeanLauncherDll leanDir (results.TryGetResult LeanLauncherDll)
 
+                // 解析 TOML 路径（支持只给名字）
+                let tomlArg = sub.GetResult BacktestArgs.ConfigToml
+                let tomlPath = resolveTomlPath tomlArg
+
+                // Run 目录与 plugins
                 let stamp = DateTime.UtcNow.ToString "yyyyMMdd-HHmmss"
                 let runDir = Path.Combine(outRoot, "backtest", stamp) |> ensureDir
                 let runPlugins = Path.Combine(runDir, pluginsRel) |> ensureDir
                 collectPlugins runPlugins pluginBins pluginProjects
 
-                let tpl = loadTemplate leanDir (sub.TryGetResult BacktestArgs.ConfigTemplate)
-                let algoType = sub.GetResult BacktestArgs.AlgoTypeName
-                let algoLang = sub.GetResult(BacktestArgs.AlgoLanguage, defaultValue = "FSharp")
-
-                let historyProvider =
-                    sub.GetResult(HistoryProvider, defaultValue = "Lean.Extension.SqliteHistoryProvider")
-
-                let commonPatch = patchCommon algoType algoLang algoDll
-
-                let modePatch =
-                    patchBacktest historyProvider (sub.TryGetResult Start) (sub.TryGetResult End)
-
-                let finalCfg =
-                    finalize tpl commonPatch modePatch (sub.TryGetResult BacktestArgs.Overrides)
-
-                Json.write (Path.Combine(runDir, "config.json")) finalCfg
-                Log.Information("配置已写入：{Path}", Path.Combine(runDir, "config.json"))
+                // TOML -> JSON（不做任何合并/补丁），写出 config.json
+                let je = fromTomlFile tomlPath
+                Json.write (Path.Combine(runDir, "config.json")) je
+                Log.Information("配置已写入（由 TOML 原样转换）：{Path}", Path.Combine(runDir, "config.json"))
 
                 runLean launcherDll runDir
                 0
@@ -587,37 +424,19 @@ module Main =
                 if not skipBuild then
                     buildAll repo algoDir leanDir pluginProjects
 
-                let algoDll = findAlgoDll algoDir (sub.TryGetResult AlgoDll)
                 let launcherDll = findLeanLauncherDll leanDir (results.TryGetResult LeanLauncherDll)
+
+                let tomlArg = sub.GetResult ConfigToml
+                let tomlPath = resolveTomlPath tomlArg
 
                 let stamp = DateTime.UtcNow.ToString "yyyyMMdd-HHmmss"
                 let runDir = Path.Combine(outRoot, "live", stamp) |> ensureDir
                 let runPlugins = Path.Combine(runDir, pluginsRel) |> ensureDir
                 collectPlugins runPlugins pluginBins pluginProjects
 
-                let tpl = loadTemplate leanDir (sub.TryGetResult ConfigTemplate)
-                let algoType = sub.GetResult AlgoTypeName
-                let algoLang = sub.GetResult(AlgoLanguage, defaultValue = "FSharp")
-                let brokerage = sub.GetResult(Brokerage, defaultValue = "UnikoCrypto")
-
-                let dqHandler =
-                    sub.GetResult(DataQueueHandler, defaultValue = "YourCompany.Lean.UnikoCryptoDataQueueHandler")
-
-                let commonPatch = patchCommon algoType algoLang algoDll
-
-                let modePatch =
-                    patchLive
-                        brokerage
-                        dqHandler
-                        (sub.TryGetResult ApiKey)
-                        (sub.TryGetResult ApiSecret)
-                        (sub.TryGetResult WsUrl)
-                        (sub.TryGetResult RestUrl)
-
-                let finalCfg = finalize tpl commonPatch modePatch (sub.TryGetResult Overrides)
-
-                Json.write (Path.Combine(runDir, "config.json")) finalCfg
-                Log.Information("配置已写入：{Path}", Path.Combine(runDir, "config.json"))
+                let je = fromTomlFile tomlPath
+                Json.write (Path.Combine(runDir, "config.json")) je
+                Log.Information("配置已写入（由 TOML 原样转换）：{Path}", Path.Combine(runDir, "config.json"))
 
                 runLean launcherDll runDir
                 0
@@ -637,18 +456,12 @@ module Main =
                 Console.WriteLine("Output    : {0}", outRoot)
                 Console.WriteLine()
                 Console.WriteLine("用法示例：")
-                Console.WriteLine("  回测：")
-
-                Console.WriteLine(
-                    "    dotnet run --project Launcher -- backtest -t Algorithm.MyAlgo -L FSharp -s 2020-01-01 -e 2020-12-31 -T ./Launcher/Configs/backtest.toml -O ./Launcher/Configs/overrides.toml --plugin-proj ./src/Lean.Extensions.Uniko/Lean.Extensions.Uniko.fsproj"
-                )
-
-                Console.WriteLine("  实盘：")
-
-                Console.WriteLine(
-                    "    dotnet run --project Launcher -- live -t Algorithm.MyLiveAlgo -L FSharp -b UnikoCrypto -q YourCompany.Lean.UnikoCryptoDataQueueHandler -T ./Launcher/Configs/live.toml -O ./Launcher/Configs/overrides.toml --plugin-proj ./src/Lean.Extensions.Uniko/Lean.Extensions.Uniko.fsproj"
-                )
-
+                Console.WriteLine("  回测（传完整路径）：")
+                Console.WriteLine("    dotnet run --project Launcher -- backtest -T ./Launcher/backtesting.toml")
+                Console.WriteLine("  回测（仅传文件名，从当前工作目录查找同名 .toml）：")
+                Console.WriteLine("    dotnet run --project Launcher -- backtest -T backtesting")
+                Console.WriteLine("  实盘（同理）：")
+                Console.WriteLine("    dotnet run --project Launcher -- live -T live")
                 0
             | _ -> 0
         with ex ->
