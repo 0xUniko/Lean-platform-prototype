@@ -2,7 +2,7 @@
   "version": "0.2.0",
   "configurations": [
     {
-      // 调试回测
+      // 调试回测：仅需 TOML（必须包含 algorithm-location）
       "name": "Launcher Backtest",
       "type": "coreclr",
       "request": "launch",
@@ -13,18 +13,19 @@
         "${workspaceFolder}/Launcher/Launcher.fsproj",
         "--",
         "backtest",
-        "-t", "Algorithm.MyAlgo",
-        "-L", "FSharp",
-        "-s", "2020-01-01",
-        "-e", "2020-12-31",
-        "-T", "${workspaceFolder}/Launcher/Configs/backtest.toml"
+        "-T",
+        "${workspaceFolder}/Launcher/backtesting.toml"
       ],
       "cwd": "${workspaceFolder}",
       "console": "integratedTerminal",
-      "stopAtEntry": false
+      "stopAtEntry": false,
+      "env": {
+        // 供 TOML 中的 ${PWD} 展开使用
+        "PWD": "${workspaceFolder}"
+      }
     },
     {
-      // 调试实盘
+      // 调试实盘：示例使用 Launcher/config.toml（请按需替换为你的 live TOML）
       "name": "Launcher Live",
       "type": "coreclr",
       "request": "launch",
@@ -35,15 +36,15 @@
         "${workspaceFolder}/Launcher/Launcher.fsproj",
         "--",
         "live",
-        "-t", "Algorithm.MyLiveAlgo",
-        "-L", "FSharp",
-        "-b", "UnikoCrypto",
-        "-q", "Lean.Extension.UnikoCryptoDataQueueHandler",
-        "-T", "${workspaceFolder}/Launcher/Configs/live.toml"
+        "-T",
+        "${workspaceFolder}/Launcher/config.toml"
       ],
       "cwd": "${workspaceFolder}",
       "console": "integratedTerminal",
-      "stopAtEntry": false
+      "stopAtEntry": false,
+      "env": {
+        "PWD": "${workspaceFolder}"
+      }
     }
   ]
 }

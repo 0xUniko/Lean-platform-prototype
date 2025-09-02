@@ -5,6 +5,12 @@ algorithm-language = "FSharp"
 # 建议用绝对路径，或者你也可以用相对路径（相对运行目录 runs/.../timestamp/）
 algorithm-location = "${PWD}/Algorithm/bin/Release/net9.0/Algorithm.dll"
 
+# SQLite 连接串（供自定义 SqliteHistoryProvider 使用）
+sqlite-connection = "Data Source=${PWD}/LeanSqlite.MarketData/marketdata.db"
+
+# 让 Composer 从 ./plugins 扫描并加载扩展 DLL（如 Lean.Extension.dll）
+composer-dll-directory = "./plugins"
+
 # 引擎基础
 data-folder = "./data"            # 不会实用到（我们用自定义历史）
 debugging = false

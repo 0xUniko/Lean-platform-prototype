@@ -255,6 +255,14 @@ module Build =
 
         buildProject repo algoProj
 
+        // LeanSqlite.MarketData（供 Provider 依赖）
+        let mdProj = Path.Combine(repo, "LeanSqlite.MarketData", "LeanSqlite.MarketData.fsproj")
+        if File.Exists mdProj then buildProject repo mdProj
+
+        // Lean.Extension（插件：HistoryProvider / Brokerage / QueueHandler）
+        let extProj = Path.Combine(repo, "Lean.Extension", "Lean.Extension.fsproj")
+        if File.Exists extProj then buildProject repo extProj
+
         // Lean.Launcher
         let leanLauncherProj = Path.Combine(leanDir repo, "Launcher")
         buildProject repo leanLauncherProj
@@ -364,6 +372,23 @@ module Main =
 
                 // 新增：确保 data 链接存在（让 ./data 指到 <repo>/lean/Data）
                 DataLink.ensureDataLink repo runDir
+
+                // 3.1) 复制插件 DLL 到 ./plugins（Lean.Extension 及其依赖 LeanSqlite.MarketData）
+                let tryCopy (searchRoot: string) (fileName: string) =
+                    if Directory.Exists searchRoot then
+                        let files = Directory.GetFiles(searchRoot, fileName, SearchOption.AllDirectories)
+                        if files.Length > 0 then
+                            let src = files[0]
+                            let dst = Path.Combine(_plugins, fileName)
+                            File.Copy(src, dst, true)
+                            Log.Information("已复制插件：{Src} -> {Dst}", src, dst)
+                        else
+                            Log.Warning("未找到待复制的插件：{File}", fileName)
+                    else
+                        Log.Warning("插件搜索目录不存在：{Dir}", searchRoot)
+
+                tryCopy (Path.Combine(repo, "Lean.Extension", "bin")) "Lean.Extension.dll"
+                tryCopy (Path.Combine(repo, "LeanSqlite.MarketData", "bin")) "LeanSqlite.MarketData.dll"
 
                 // 4) TOML -> JSON；**强制校验 algorithm-location 必须存在**
                 let cfg = ConfigParse.fromTomlFile tomlPath
