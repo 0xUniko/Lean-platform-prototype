@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -11,10 +11,16 @@
 
   <ItemGroup>
     <PackageReference Include="Argu" Version="6.2.5" />
-    <PackageReference Include="Serilog" Version="4.3.0" />
-    <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
-    <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
     <PackageReference Include="tomlyn" Version="0.19.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\lean\Engine\QuantConnect.Lean.Engine.csproj" />
+    <ProjectReference Include="..\lean\Configuration\QuantConnect.Configuration.csproj" />
+    <ProjectReference Include="..\lean\Logging\QuantConnect.Logging.csproj" />
+    <ProjectReference Include="..\lean\Common\QuantConnect.csproj" />
+    <ProjectReference Include="..\lean\Queues\QuantConnect.Queues.csproj" />
+    <ProjectReference Include="..\lean\Messaging\QuantConnect.Messaging.csproj" />
   </ItemGroup>
 
 </Project>
