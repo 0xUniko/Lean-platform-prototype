@@ -65,15 +65,15 @@ module Program =
         Log.Trace "Program.ExitKeyPress(): Lean instance has been cancelled, shutting down safely now"
 
     // let launch (args: string array) =
-    let launch (cliArguments: Collections.Generic.Dictionary<string, obj> option) =
+    let launch (cliArguments: Collections.Generic.Dictionary<string, obj>) =
         if OS.IsWindows then
             Console.OutputEncoding <- Text.Encoding.UTF8
 
         // if args.Length > 0 then
         //     Config.MergeCommandLineArgumentsWithConfiguration(LeanArgumentParser.ParseArguments args)
 
-        if Option.isSome cliArguments then
-            Config.MergeCommandLineArgumentsWithConfiguration(Option.get cliArguments)
+        // if Option.isSome cliArguments then
+        Config.MergeCommandLineArgumentsWithConfiguration cliArguments
 
         Thread.CurrentThread.Name <- "Algorithm Analysis Thread"
 
@@ -336,33 +336,30 @@ module Program =
         let parser = ArgumentParser.Create<CLIArgs>(programName = "launcher")
         let results = parser.Parse argv
 
-        let cliArguments =
-            match results.TryGetResult Config with
-            | Some tomlArg ->
-                try
-                    let tomlPath = TomlToJson.resolveTomlPath tomlArg
-                    let cfg = TomlToJson.fromTomlFile tomlPath
-                    TomlToJson.assertHasAlgorithmLocation cfg
+        match results.TryGetResult Config with
+        | Some tomlArg ->
+            try
+                let tomlPath = TomlToJson.resolveTomlPath tomlArg
+                let cfg = TomlToJson.fromTomlFile tomlPath
+                TomlToJson.assertHasAlgorithmLocation cfg
 
-                    // 调试用途：把解析后的配置写入本地 config.json 便于核对
-                    // let debugConfigPath = Path.Combine(Directory.GetCurrentDirectory(), "config.json")
-                    // TomlToJson.writeJson debugConfigPath cfg
+                // 调试用途：把解析后的配置写入本地 config.json 便于核对
+                // let debugConfigPath = Path.Combine(Directory.GetCurrentDirectory(), "config.json")
+                // TomlToJson.writeJson debugConfigPath cfg
 
-                    // in-memory 合并（不落地 JSON 文件）
-                    // let argsDict = TomlToJson.toDictionary cfg
-                    TomlToJson.toDictionary cfg |> Some
-                // launch (Some argsDict)
-                with ex ->
-                    // Console.Error.WriteLine($"TOML 解析失败：{ex.Message}")
-                    failwith ($"TOML 解析失败：{ex.Message}")
+                // in-memory 合并（不落地 JSON 文件）
+                // let argsDict = TomlToJson.toDictionary cfg
+                TomlToJson.toDictionary cfg |> launch
+            // launch (Some argsDict)
+            with ex ->
+                Console.Error.WriteLine($"TOML 解析失败：{ex.Message}")
+                2
+        | None ->
+            match results.TryGetResult Hello with
+            | Some _ ->
+                Console.WriteLine("用法：launcher -c <配置.toml>")
+                Console.WriteLine("示例：dotnet run --project Launcher -- -c Launcher/backtesting.toml")
+                1
             | None ->
-                match results.TryGetResult Hello with
-                | Some _ ->
-                    Console.WriteLine("用法：launcher -c <配置.toml>")
-                    Console.WriteLine("示例：dotnet run --project Launcher -- -c Launcher/backtesting.toml")
-                    None
-                | None ->
-                    Console.WriteLine("请使用 -c <配置.toml> 指定配置文件；或用 --help 查看帮助。")
-                    None
-
-        launch cliArguments
+                Console.WriteLine("请使用 -c <配置.toml> 指定配置文件；或用 --help 查看帮助。")
+                1

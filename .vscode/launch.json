@@ -2,19 +2,18 @@
   "version": "0.2.0",
   "configurations": [
     {
-      // 调试回测：仅需 TOML（必须包含 algorithm-location）
-      "name": "Launcher Backtest",
+      // 调试回测：传入 TOML（包含 algorithm-location）
+      "name": "Launcher Backtest (Debug)",
       "type": "coreclr",
       "request": "launch",
       "program": "dotnet",
       "args": [
         "run",
         "--project",
-        "${workspaceFolder}/Launcher/Launcher.fsproj",
+        "${workspaceFolder}/Launcher",
         "--",
-        "backtest",
-        "-T",
-        "${workspaceFolder}/Launcher/backtesting.toml"
+        "-c",
+        "Launcher/backtesting.toml"
       ],
       "cwd": "${workspaceFolder}",
       "console": "integratedTerminal",
@@ -24,27 +23,5 @@
         "PWD": "${workspaceFolder}"
       }
     },
-    {
-      // 调试实盘：示例使用 Launcher/config.toml（请按需替换为你的 live TOML）
-      "name": "Launcher Live",
-      "type": "coreclr",
-      "request": "launch",
-      "program": "dotnet",
-      "args": [
-        "run",
-        "--project",
-        "${workspaceFolder}/Launcher/Launcher.fsproj",
-        "--",
-        "live",
-        "-T",
-        "${workspaceFolder}/Launcher/config.toml"
-      ],
-      "cwd": "${workspaceFolder}",
-      "console": "integratedTerminal",
-      "stopAtEntry": false,
-      "env": {
-        "PWD": "${workspaceFolder}"
-      }
-    }
   ]
 }

@@ -1,67 +1,15 @@
 # 顶层：最关键的三个字段
 environment = "backtesting"
-algorithm-language = "FSharp"
+algorithm-language = "CSharp"
 # 指向 Algorithm 项目编译产出的 Algorithm.dll
 # 建议用绝对路径，或者你也可以用相对路径（相对运行目录 runs/.../timestamp/）
-algorithm-location = "${PWD}/Algorithm/bin/Release/net9.0/Algorithm.dll"
+algorithm-location = "Algorithm/bin/Release/net9.0/Algorithm.dll"
 
-# SQLite 连接串（供自定义 SqliteHistoryProvider 使用）
-sqlite-connection = "Data Source=${PWD}/LeanSqlite.MarketData/marketdata.db"
+algorithm-type-name = "Algorithm.BasicTemplateAlgorithm"
 
-# 让 Composer 从 ./plugins 扫描并加载扩展 DLL（如 Lean.Extension.dll）
-composer-dll-directory = "./plugins"
+data-folder = "lean/Data"
 
-# 引擎基础
-data-folder = "./data"            # 不会实用到（我们用自定义历史）
-debugging = false
-debugging-method = "LocalCmdline"
+results-destination-folder = "runs"
 
-# 处理器/服务（保持 Lean 默认组合）
-log-handler = "QuantConnect.Logging.CompositeLogHandler"
-messaging-handler = "QuantConnect.Messaging.Messaging"
-job-queue-handler = "QuantConnect.Queues.JobQueue"
-api-handler = "QuantConnect.Api.Api"
-map-file-provider = "QuantConnect.Data.Auxiliary.LocalDiskMapFileProvider"
-factor-file-provider = "QuantConnect.Data.Auxiliary.LocalDiskFactorFileProvider"
-data-provider = "QuantConnect.Lean.Engine.DataFeeds.DefaultDataProvider"
-data-channel-provider = "DataChannelProvider"
-object-store = "QuantConnect.Lean.Engine.Storage.LocalObjectStore"
-data-aggregator = "QuantConnect.Lean.Engine.DataFeeds.AggregationManager"
-
-# 资源限制（照 Lean 默认）
-symbol-minute-limit = 10000
-symbol-second-limit = 10000
-symbol-tick-limit = 10000
-ignore-unknown-asset-holdings = true
-show-missing-data-logs = false
-maximum-warmup-history-days-look-back = 5
-maximum-data-points-per-chart-series = 1000000
-maximum-chart-series = 30
-force-exchange-always-open = false
-transaction-log = ""
-reserved-words-prefix = "@"
-
-# 账户 / API（跑本地回测可以留空）
-job-user-id = "0"
-api-access-token = ""
-job-organization-id = ""
-
-# 参数（可选：如果你想让策略读取，这里只放字符串键值更保险）
-[parameters]
-ema-fast = "10"
-ema-slow = "20"
-
-# 回测窗口（一定要和你 SQLite 的覆盖范围匹配）
-start-date = "2024-09-01"
-end-date = "2025-09-01"
-
-# 环境选择：回测使用自定义 Sqlite 历史提供者
-[environments.backtesting]
-live-mode = false
-setup-handler = "QuantConnect.Lean.Engine.Setup.BacktestingSetupHandler"
-result-handler = "QuantConnect.Lean.Engine.Results.BacktestingResultHandler"
-data-feed-handler = "QuantConnect.Lean.Engine.DataFeeds.FileSystemDataFeed"
-real-time-handler = "QuantConnect.Lean.Engine.RealTime.BacktestingRealTimeHandler"
-# 👇 关键：把历史数据切到你自己的 provider
-history-provider = ["Lean.Extension.SqliteHistoryProvider"]
-transaction-handler = "QuantConnect.Lean.Engine.TransactionHandlers.BacktestingTransactionHandler"
+# 自动关闭控制台窗口（回测结束不再等待按键）
+close-automatically = true
