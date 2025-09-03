@@ -21,6 +21,7 @@
     <ProjectReference Include="..\lean\Common\QuantConnect.csproj" />
     <ProjectReference Include="..\lean\Queues\QuantConnect.Queues.csproj" />
     <ProjectReference Include="..\lean\Messaging\QuantConnect.Messaging.csproj" />
+    <ProjectReference Include="..\Lean.Extension\Lean.Extension.fsproj" />
   </ItemGroup>
 
 </Project>
