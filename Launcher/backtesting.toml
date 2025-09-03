@@ -5,9 +5,10 @@ algorithm-language = "CSharp"
 # 建议用绝对路径，或者你也可以用相对路径（相对运行目录 runs/.../timestamp/）
 algorithm-location = "Algorithm/bin/Release/net9.0/Algorithm.dll"
 
-algorithm-type-name = "Algorithm.BasicTemplateAlgorithm"
+algorithm-type-name = "Algorithm.GridBot"
 
-data-provider = "FsDefaultDataProvider"
+# Use our custom provider that returns constant bars for equity-minute data
+data-provider = "MyDataProvider"
 
 data-folder = "lean/Data"
 

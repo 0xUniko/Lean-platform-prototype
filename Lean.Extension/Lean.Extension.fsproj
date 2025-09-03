@@ -5,7 +5,7 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
-  <ItemGroup><Compile Include="CryptoDataQueueHandler.fs" /><Compile Include="CryptoBrokerage.fs" /><Compile Include="CryptoBrokerageFactory.fs" /><Compile Include="SqliteHistoryProvider.fs" /><Compile Include="FsDefaultDataProvider.fs" />
+  <ItemGroup><Compile Include="MyDataProvider.fs" /><Compile Include="CryptoDataQueueHandler.fs" /><Compile Include="CryptoBrokerage.fs" /><Compile Include="CryptoBrokerageFactory.fs" /><Compile Include="SqliteHistoryProvider.fs" /><Compile Include="FsDefaultDataProvider.fs" />
     
   </ItemGroup>
 
