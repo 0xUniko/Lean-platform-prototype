@@ -52,6 +52,7 @@ lean/**/*.json
 Results/
 *.pyc
 __pycache__/
+log.txt
 
 # --- Patch files (可选，如果你用补丁机制) ---
 patches/*.patch

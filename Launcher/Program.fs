@@ -258,11 +258,11 @@ module Program =
             if String.IsNullOrWhiteSpace v then
                 failwith "algorithm-location 不能为空字符串。"
 
-        let writeJson (path: string) (je: JsonElement) =
-            use fs = File.Create path
-            use w = new Utf8JsonWriter(fs, JsonWriterOptions(Indented = true))
-            je.WriteTo(w)
-            w.Flush()
+        // let writeJson (path: string) (je: JsonElement) =
+        //     use fs = File.Create path
+        //     use w = new Utf8JsonWriter(fs, JsonWriterOptions(Indented = true))
+        //     je.WriteTo(w)
+        //     w.Flush()
 
         let resolveTomlPath (input: string) =
             let hasSep =
@@ -343,6 +343,10 @@ module Program =
                     let tomlPath = TomlToJson.resolveTomlPath tomlArg
                     let cfg = TomlToJson.fromTomlFile tomlPath
                     TomlToJson.assertHasAlgorithmLocation cfg
+
+                    // 调试用途：把解析后的配置写入本地 config.json 便于核对
+                    // let debugConfigPath = Path.Combine(Directory.GetCurrentDirectory(), "config.json")
+                    // TomlToJson.writeJson debugConfigPath cfg
 
                     // in-memory 合并（不落地 JSON 文件）
                     // let argsDict = TomlToJson.toDictionary cfg
