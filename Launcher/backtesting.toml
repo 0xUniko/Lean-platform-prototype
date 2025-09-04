@@ -3,7 +3,7 @@ environment = "backtesting"
 algorithm-language = "CSharp"
 # 指向 Algorithm 项目编译产出的 Algorithm.dll
 # 建议用绝对路径，或者你也可以用相对路径（相对运行目录 runs/.../timestamp/）
-algorithm-location = "Algorithm/bin/Release/net9.0/Algorithm.dll"
+algorithm-location = "Algorithm/bin/Debug/net9.0/Algorithm.dll"
 
 algorithm-type-name = "Algorithm.GridBot"
 

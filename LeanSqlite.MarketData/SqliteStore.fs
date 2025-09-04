@@ -176,8 +176,6 @@ module SqliteStore =
         let tkr = symbol.Value
         let rk = resKey resolution
 
-        let sw = Diagnostics.Stopwatch.StartNew()
-
         let rows =
             query {
                 for c in ctx.Candles do
@@ -194,8 +192,5 @@ module SqliteStore =
                     select c
             }
             |> Seq.toArray
-
-        sw.Stop()
-        printfn "Query executed in: %d ms" sw.ElapsedMilliseconds
 
         rows |> Array.Parallel.map (toTradeBar symbol per)

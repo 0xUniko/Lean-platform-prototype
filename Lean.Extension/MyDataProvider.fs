@@ -49,24 +49,28 @@ type MyDataProvider() as this =
         let entryName = QuantConnect.Util.LeanData.GenerateZipEntryName(symbol, date, res, TickType.Trade)
 
         let ms = new MemoryStream()
-        use zip = new ZipArchive(ms, ZipArchiveMode.Create, leaveOpen = true)
-        let entry = zip.CreateEntry(entryName, CompressionLevel.Optimal)
-        use es = entry.Open()
-        use sw = new StreamWriter(es, Encoding.UTF8)
+        // Scope to ensure writer/entry are disposed before the archive,
+        // and the archive is disposed before we rewind the MemoryStream
+        do
+            use zip = new ZipArchive(ms, ZipArchiveMode.Create, leaveOpen = true)
+            let entry = zip.CreateEntry(entryName, CompressionLevel.Optimal)
+            use es = entry.Open()
+            use sw = new StreamWriter(es, Encoding.UTF8)
 
-        for b in bars do
-            // milliseconds since midnight for this row
-            let millis = int (b.Time.TimeOfDay.TotalMilliseconds)
-            // No scaling for crypto
-            let o = b.Open.ToString(CultureInfo.InvariantCulture)
-            let h = b.High.ToString(CultureInfo.InvariantCulture)
-            let l = b.Low.ToString(CultureInfo.InvariantCulture)
-            let c = b.Close.ToString(CultureInfo.InvariantCulture)
-            let v = b.Volume.ToString(CultureInfo.InvariantCulture)
-            sw.WriteLine(sprintf "%d,%s,%s,%s,%s,%s" millis o h l c v)
+            for b in bars do
+                // milliseconds since midnight for this row
+                let millis = int (b.Time.TimeOfDay.TotalMilliseconds)
+                // No scaling for crypto
+                let o = b.Open.ToString(CultureInfo.InvariantCulture)
+                let h = b.High.ToString(CultureInfo.InvariantCulture)
+                let l = b.Low.ToString(CultureInfo.InvariantCulture)
+                let c = b.Close.ToString(CultureInfo.InvariantCulture)
+                let v = b.Volume.ToString(CultureInfo.InvariantCulture)
+                sw.WriteLine(sprintf "%d,%s,%s,%s,%s,%s" millis o h l c v)
 
-        sw.Flush()
-        zip.Dispose()
+            // disposing 'sw' will flush to 'es' and then to the zip entry
+            ()
+
         ms.Position <- 0L
         ms :> Stream
 

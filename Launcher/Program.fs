@@ -323,12 +323,14 @@ module Program =
 
     type CLIArgs =
         | [<AltCommandLine("-c")>] Config of string
+        | [<AltCommandLine("--no-build")>] NoBuild
         | Hello
 
         interface IArgParserTemplate with
             member x.Usage =
                 match x with
                 | Config _ -> "TOML 配置文件路径，或只写文件名（不含路径），将从当前工作目录查找同名 .toml。（注意：TOML 必须包含根级键 algorithm-location）"
+                | NoBuild -> "跳过在运行前对 Algorithm 项目的构建。"
                 | Hello -> "打印探测信息。"
 
     [<EntryPoint>]
@@ -343,13 +345,54 @@ module Program =
                 let cfg = TomlToJson.fromTomlFile tomlPath
                 TomlToJson.assertHasAlgorithmLocation cfg
 
+                // run a quick build of the Algorithm project unless --no-build is specified
+                let skipBuild =
+                    match results.TryGetResult NoBuild with
+                    | Some _ -> true
+                    | None -> false
+
+                // pre-build Algorithm project in Debug configuration
+                let buildExitCode =
+                    if skipBuild then 0 else
+                        try
+                            let projPath = Path.Combine(Directory.GetCurrentDirectory(), "Algorithm", "Algorithm.fsproj")
+                            if not (File.Exists projPath) then
+                                Console.Error.WriteLine($"未找到算法项目文件：{projPath}")
+                                3
+                            else
+                                let startInfo = new System.Diagnostics.ProcessStartInfo()
+                                startInfo.FileName <- "dotnet"
+                                startInfo.Arguments <- $"build \"{projPath}\" -c Debug"
+                                startInfo.WorkingDirectory <- Path.GetDirectoryName projPath
+                                startInfo.RedirectStandardOutput <- true
+                                startInfo.RedirectStandardError <- true
+                                startInfo.UseShellExecute <- false
+                                use p = System.Diagnostics.Process.Start(startInfo)
+                                p.OutputDataReceived.Add(fun e -> if not (isNull e.Data) then Console.WriteLine e.Data)
+                                p.ErrorDataReceived.Add(fun e -> if not (isNull e.Data) then Console.Error.WriteLine e.Data)
+                                p.BeginOutputReadLine()
+                                p.BeginErrorReadLine()
+                                p.WaitForExit()
+                                if p.ExitCode <> 0 then
+                                    Console.Error.WriteLine($"Algorithm 构建失败，退出码 {p.ExitCode}")
+                                else
+                                    Console.WriteLine("Algorithm 预构建完成（Debug）。")
+                                p.ExitCode
+                        with ex ->
+                            Console.Error.WriteLine($"构建 Algorithm 项目时出错：{ex.Message}")
+                            3
+
+                if buildExitCode <> 0 then
+                    buildExitCode
+                else
+                    // in-memory 合并（不落地 JSON 文件）并启动引擎
+                    TomlToJson.toDictionary cfg |> launch |> ignore
+                    0
+
                 // 调试用途：把解析后的配置写入本地 config.json 便于核对
                 // let debugConfigPath = Path.Combine(Directory.GetCurrentDirectory(), "config.json")
                 // TomlToJson.writeJson debugConfigPath cfg
 
-                // in-memory 合并（不落地 JSON 文件）
-                // let argsDict = TomlToJson.toDictionary cfg
-                TomlToJson.toDictionary cfg |> launch
             // launch (Some argsDict)
             with ex ->
                 Console.Error.WriteLine($"TOML 解析失败：{ex.Message}")
