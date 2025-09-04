@@ -1,4 +1,6 @@
-﻿namespace LeanSqlite.MarketData
+﻿// dotnet run --project LeanSqlite.MarketData -- data -a cryptofuture -s BTCUSDT -m binance -r minute -b 2024-08-30 -e 2025-08-31 -k trade
+
+namespace LeanSqlite.MarketData
 
 open System
 open Argu
@@ -33,8 +35,8 @@ module private Parse =
             | "daily" -> Resolution.Daily
             | _ -> failwithf "Unknown resolution: %s" s
 
-    /// 将用户输入规范化为 Lean 的 Market 常量；不认识的直接报错
-    let makeSymbol (marketOpt: string option) (ticker: string) =
+    /// 将用户输入规范化为 Lean 的 Market/Asset；不认识的直接报错
+    let makeSymbol (marketOpt: string option) (assetOpt: string option) (ticker: string) =
         let market =
             match marketOpt with
             | Some m -> m
@@ -64,8 +66,12 @@ module private Parse =
                 failwithf
                     "Unknown/unsupported market: %s. Try one of: binance, binanceus, gdax, kraken, bitfinex, oanda, fxcm, usa"
                     other
+        let asset =
+            match assetOpt |> Option.map (fun s -> s.Trim().ToLowerInvariant()) with
+            | Some "cryptofuture" -> SecurityType.CryptoFuture
+            | _ -> SecurityType.Crypto
 
-        Symbol.Create(ticker.ToUpperInvariant(), SecurityType.Crypto, mkt)
+        Symbol.Create(ticker.ToUpperInvariant(), asset, mkt)
 
     let todayUtcRightOpen () = DateTime.UtcNow.Date.AddDays 1.0 // 右开区间上界
 
@@ -79,6 +85,9 @@ type DownloadArgs =
     | [<AltCommandLine("-b")>] Start of string
     | [<AltCommandLine("-e")>] End_ of string
     | [<AltCommandLine("-c")>] Connection of string
+    | [<AltCommandLine("-k")>] Kind of string // trade | quote
+    | [<AltCommandLine("-a")>] Asset of string // crypto | cryptofuture
+    | [<AltCommandLine("-f")>] Futures of string // um | cm (for cryptofuture)
 
     interface IArgParserTemplate with
         member s.Usage =
@@ -89,6 +98,9 @@ type DownloadArgs =
             | Start _ -> "起始日期（UTC，YYYY-MM-DD 或 YYYYMMDD）"
             | End_ _ -> "结束日期（UTC，默认为今天的次日，右开区间）"
             | Connection _ -> "SQLite 连接串，默认 Data Source=marketdata.db"
+            | Kind _ -> "数据类型：trade 或 quote（默认 trade）"
+            | Asset _ -> "资产类型：crypto（现货）或 cryptofuture（合约），默认 crypto"
+            | Futures _ -> "合约市场：um(USDT-M) 或 cm(Coin-M)，仅当 -a cryptofuture 时有效；默认 um"
 
 type ListArgs =
     | [<AltCommandLine("-c")>] Connection of string
@@ -130,6 +142,7 @@ type VerifyArgs =
             | Resolution _ -> "K线周期（默认 Minute）"
             | Connection _ -> "SQLite 连接串（默认 Data Source=marketdata.db）"
 
+[<CliPrefix(CliPrefix.None)>]
 type Commands =
     | Data of ParseResults<DownloadArgs>
     | List of ParseResults<ListArgs>
@@ -140,7 +153,7 @@ type Commands =
     interface IArgParserTemplate with
         member s.Usage =
             match s with
-            | Data _ -> "下载并写入历史行情（类似 lean data download）"
+            | Data _ -> "下载并写入历史行情（trade bars）"
             | List _ -> "列出库内已有的 (market/security/ticker/res) 及行数"
             | Stats _ -> "查看某合约的时间范围与行数"
             | Vacuum _ -> "VACUUM 压缩数据库"
@@ -158,6 +171,7 @@ module private Impl =
         let conn = args.TryGetResult DownloadArgs.Connection
 
         let res = args.TryGetResult DownloadArgs.Resolution |> parseRes
+        let kind = args.TryGetResult DownloadArgs.Kind |> Option.defaultValue "trade" |> fun s -> s.Trim().ToLowerInvariant()
 
         let mkt = args.TryGetResult DownloadArgs.Market
 
@@ -180,10 +194,17 @@ module private Impl =
             { Domain.DateRange.FromUtc = start
               ToUtc = fin }
 
+        let asset = args.TryGetResult DownloadArgs.Asset |> Option.defaultValue "crypto" |> fun s -> s.Trim().ToLowerInvariant()
+        let fut = args.TryGetResult DownloadArgs.Futures |> Option.defaultValue "um" |> fun s -> s.Trim().ToLowerInvariant()
+
         for tkr in syms do
-            let symbol = makeSymbol mkt tkr
-            printfn "Downloading %s %A [%s .. %s) ..." tkr res (start.ToString("u")) (fin.ToString("u"))
-            let bars: TradeBar[] = BinanceDownloader.fetch symbol res range
+            let symbol = makeSymbol mkt (Some asset) tkr
+            printfn "Downloading %s (%s) %A [%s .. %s) ..." tkr asset res (start.ToString("u")) (fin.ToString("u"))
+            let bars: TradeBar[] =
+                if asset = "cryptofuture" then
+                    BinanceFuturesDownloader.fetch symbol res range fut
+                else
+                    BinanceDownloader.fetch symbol res range
             SqliteStore.upsert conn symbol res bars
             printfn "Saved %d bars for %s" bars.Length tkr
 
@@ -211,7 +232,7 @@ module private Impl =
             | Some s -> s
             | None -> failwith "需要 --symbol"
 
-        let symbol = makeSymbol mkt tkr
+        let symbol = makeSymbol mkt None tkr
 
         match SqliteStore.datasetStats conn symbol res with
         | None -> printfn "No rows for %s %A." tkr res
@@ -235,11 +256,11 @@ module private Impl =
             | Some s -> s
             | None -> failwith "需要 --symbol"
 
-        let symbol = makeSymbol mkt tkr
+        let symbol = makeSymbol mkt None tkr
         let per = periodOf res
 
         let all =
-            SqliteStore.query
+            SqliteStore.queryBars
                 conn
                 symbol
                 res

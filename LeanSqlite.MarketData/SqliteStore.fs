@@ -6,6 +6,7 @@ open EFCore.BulkExtensions
 open System.Linq
 open QuantConnect
 open QuantConnect.Data.Market
+open QuantConnect.Data
 
 // =======================================================================
 // SqliteStore.fs
@@ -114,6 +115,7 @@ module SqliteStore =
 
             ctx.BulkInsertOrUpdate(entities, config)
 
+
     /// 列出库中已有 (Market, Security, Ticker, Res) 的去重清单
     let listInstruments (connStr: string option) =
         use ctx = new MarketDataContext(mkOptions connStr)
@@ -166,7 +168,7 @@ module SqliteStore =
             Some(times[0], times[times.Length - 1], times.Length)
 
     /// LINQ 查询：返回按时间升序的 TradeBar 列表
-    let query (connStr: string option) (symbol: Symbol) (resolution: Resolution) (range: Domain.DateRange) =
+    let queryBars (connStr: string option) (symbol: Symbol) (resolution: Resolution) (range: Domain.DateRange) =
         use ctx = new MarketDataContext(mkOptions connStr)
         ctx.Database.EnsureCreated() |> ignore
 
@@ -194,3 +196,5 @@ module SqliteStore =
             |> Seq.toArray
 
         rows |> Array.Parallel.map (toTradeBar symbol per)
+
+    

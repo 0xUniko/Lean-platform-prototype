@@ -7,6 +7,7 @@ open QuantConnect.Data
 open QuantConnect.Data.Market
 open QuantConnect.Orders
 open QuantConnect.Securities
+open QuantConnect.Orders.Slippage
 
 /// 最小网格策略：
 /// - 开盘时若没有挂单，则在当前价上下各挂一档（±stepPct）
@@ -30,6 +31,11 @@ type GridBot() =
         if inc > 0m then Math.Round(price / inc) * inc else price
 
     override this.Initialize() =
+        // 更保守的滑点：基于成交量占比的滑点模型
+        // 参数解释：volumeLimit=0.2（最多按20%成交量占比计算），priceImpact=0.2（价格影响系数）
+        // 越大越保守，可按需要再提高
+        this.SetSecurityInitializer(fun sec -> sec.SetSlippageModel(new VolumeShareSlippageModel(0.2m, 0.2m)))
+
         // 回测时间请与你的 SQLite 数据覆盖范围一致（这里仅兜底，真正以 TOML 的 start/end 为准）
         this.SetStartDate(2024, 8, 30)
         this.SetEndDate(2025, 8, 30)

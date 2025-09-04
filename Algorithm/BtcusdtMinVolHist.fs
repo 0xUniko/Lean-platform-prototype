@@ -34,7 +34,7 @@ module BtcusdtMinVolHist =
         // 取数
         // ---------------------------
         let bars =
-            SqliteStore.query None symbol resolution range
+            SqliteStore.queryBars None symbol resolution range
             |> Array.sortBy (fun (tb: TradeBar) -> tb.Time)
 
         // 足够样本才计算
