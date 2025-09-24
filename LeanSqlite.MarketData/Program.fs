@@ -165,8 +165,6 @@ type Commands =
 module private Impl =
     open Parse
 
-
-
     let runDownload (args: ParseResults<DownloadArgs>) =
         let conn = args.TryGetResult DownloadArgs.Connection
 

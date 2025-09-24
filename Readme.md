@@ -5,7 +5,7 @@ TODO:
 
 疑似Lean扩展的标准名称叫做plugins
 
-把Launcher和Data的功能和cli分离，Launcher用Avalonia加个webui可以代替cli与功能交互，webui还可以批量进行管理
+把Launcher和Data的功能和cli分离，Launcher用Avalonia/Fun.Blazor加个webui可以代替cli与功能交互，webui还可以批量进行管理
 
 Launcher在跑之前要编译一下算法
 
