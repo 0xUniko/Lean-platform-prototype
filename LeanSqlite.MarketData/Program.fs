@@ -1,6 +1,4 @@
-﻿// dotnet run --project LeanSqlite.MarketData -- data -a cryptofuture -s BTCUSDT -m binance -r minute -b 2024-08-30 -e 2025-08-31 -k trade
-
-namespace LeanSqlite.MarketData
+﻿namespace LeanSqlite.MarketData
 
 open System
 open Argu
@@ -66,6 +64,7 @@ module private Parse =
                 failwithf
                     "Unknown/unsupported market: %s. Try one of: binance, binanceus, gdax, kraken, bitfinex, oanda, fxcm, usa"
                     other
+
         let asset =
             match assetOpt |> Option.map (fun s -> s.Trim().ToLowerInvariant()) with
             | Some "cryptofuture" -> SecurityType.CryptoFuture
@@ -97,7 +96,7 @@ type DownloadArgs =
             | Resolution _ -> "Tick/Second/Minute/Hour/Daily，默认 Minute"
             | Start _ -> "起始日期（UTC，YYYY-MM-DD 或 YYYYMMDD）"
             | End_ _ -> "结束日期（UTC，默认为今天的次日，右开区间）"
-            | Connection _ -> "SQLite 连接串，默认 Data Source=marketdata.db"
+            | Connection _ -> "数据库连接串，默认 Data Source=marketdata.duckdb"
             | Kind _ -> "数据类型：trade 或 quote（默认 trade）"
             | Asset _ -> "资产类型：crypto（现货）或 cryptofuture（合约），默认 crypto"
             | Futures _ -> "合约市场：um(USDT-M) 或 cm(Coin-M)，仅当 -a cryptofuture 时有效；默认 um"
@@ -169,7 +168,6 @@ module private Impl =
         let conn = args.TryGetResult DownloadArgs.Connection
 
         let res = args.TryGetResult DownloadArgs.Resolution |> parseRes
-        let kind = args.TryGetResult DownloadArgs.Kind |> Option.defaultValue "trade" |> fun s -> s.Trim().ToLowerInvariant()
 
         let mkt = args.TryGetResult DownloadArgs.Market
 
@@ -192,23 +190,30 @@ module private Impl =
             { Domain.DateRange.FromUtc = start
               ToUtc = fin }
 
-        let asset = args.TryGetResult DownloadArgs.Asset |> Option.defaultValue "crypto" |> fun s -> s.Trim().ToLowerInvariant()
-        let fut = args.TryGetResult DownloadArgs.Futures |> Option.defaultValue "um" |> fun s -> s.Trim().ToLowerInvariant()
+        let asset =
+            args.TryGetResult Asset
+            |> Option.defaultValue "crypto"
+            |> fun s -> s.Trim().ToLowerInvariant()
+
+        let fut =
+            args.TryGetResult Futures
+            |> Option.defaultValue "um"
+            |> fun s -> s.Trim().ToLowerInvariant()
 
         for tkr in syms do
             let symbol = makeSymbol mkt (Some asset) tkr
             printfn "Downloading %s (%s) %A [%s .. %s) ..." tkr asset res (start.ToString("u")) (fin.ToString("u"))
-            let bars: TradeBar[] =
-                if asset = "cryptofuture" then
-                    BinanceFuturesDownloader.fetch symbol res range fut
-                else
-                    BinanceDownloader.fetch symbol res range
-            SqliteStore.upsert conn symbol res bars
-            printfn "Saved %d bars for %s" bars.Length tkr
+
+            if asset = "cryptofuture" then
+                let saved = BinanceDownloader.fetchFutures symbol res range fut conn
+                printfn "Saved %d bars for %s" saved tkr
+            else
+                let saved = BinanceDownloader.fetchSpot symbol res range conn
+                printfn "Saved %d bars for %s" saved tkr
 
     let runList (args: ParseResults<ListArgs>) =
         let conn = args.TryGetResult ListArgs.Connection
-        let rows = SqliteStore.listInstruments conn
+        let rows = DuckDbStore.listInstruments conn
 
         if rows.Length = 0 then
             printfn "No data."
@@ -232,7 +237,7 @@ module private Impl =
 
         let symbol = makeSymbol mkt None tkr
 
-        match SqliteStore.datasetStats conn symbol res with
+        match DuckDbStore.datasetStats conn symbol res with
         | None -> printfn "No rows for %s %A." tkr res
         | Some(fromT, toT, n) -> printfn "%s %A: %d bars [%s .. %s]" tkr res n (fromT.ToString("u")) (toT.ToString("u"))
 
@@ -258,7 +263,7 @@ module private Impl =
         let per = periodOf res
 
         let all =
-            SqliteStore.queryBars
+            DuckDbStore.queryBars
                 conn
                 symbol
                 res

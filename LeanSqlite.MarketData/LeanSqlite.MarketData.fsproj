@@ -8,7 +8,6 @@
 
   <ItemGroup><Compile Include="Domain.fs" /><Compile Include="SqliteStore.fs" /><Compile Include="DuckDbStore.fs" />
     <Compile Include="BinanceDownloader.fs" />
-    <Compile Include="BinanceFuturesDownloader.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 
