@@ -58,7 +58,9 @@ module private Duck =
         let colsCsv (cols: string array) = String.Join(", ", cols)
         let keyCsv = colsCsv Keys
         let allCsv = colsCsv All
-        let insertValuesCsv = All |> Array.map (fun c -> "@" + c) |> colsCsv
+        let placeholders = All |> Array.mapi (fun idx _ -> sprintf "$%d" (idx + 1))
+        let parameterNames = All |> Array.mapi (fun idx _ -> string (idx + 1))
+        let insertValuesCsv = placeholders |> colsCsv
         let updateSetCsv = NonKeys |> Array.map (fun c -> $"{c} = EXCLUDED.{c}") |> colsCsv
 
         let insertOnConflictSql =
@@ -78,17 +80,27 @@ module private Duck =
 
     let toParams (cmd: DuckDBCommand) (symbol: Symbol) (resolution: Resolution) (bar: TradeBar) =
         let per = periodOf resolution
-        addParam cmd "@Market" DbType.String (box symbol.ID.Market)
-        addParam cmd "@Security" DbType.String (box (symbol.ID.SecurityType.ToString().ToLowerInvariant()))
-        addParam cmd "@Ticker" DbType.String (box symbol.Value)
-        addParam cmd "@Res" DbType.String (box (resKey resolution))
-        addParam cmd "@Time" DbType.DateTime (box (bar.Time.ToUniversalTime()))
-        addParam cmd "@Open" DbType.Decimal (box bar.Open)
-        addParam cmd "@High" DbType.Decimal (box bar.High)
-        addParam cmd "@Low" DbType.Decimal (box bar.Low)
-        addParam cmd "@Close" DbType.Decimal (box bar.Close)
-        addParam cmd "@Volume" DbType.Int64 (box (int64 bar.Volume))
-        addParam cmd "@PeriodS" DbType.Int32 (box (int per.TotalSeconds))
+
+        SqlParts.All
+        |> Array.iteri (fun idx col ->
+            let name = SqlParts.parameterNames[idx]
+
+            let t, v =
+                match col with
+                | "Market" -> DbType.String, box symbol.ID.Market
+                | "Security" -> DbType.String, box (symbol.ID.SecurityType.ToString().ToLowerInvariant())
+                | "Ticker" -> DbType.String, box symbol.Value
+                | "Res" -> DbType.String, box (resKey resolution)
+                | "Time" -> DbType.DateTime, box (bar.Time.ToUniversalTime())
+                | "Open" -> DbType.Decimal, box bar.Open
+                | "High" -> DbType.Decimal, box bar.High
+                | "Low" -> DbType.Decimal, box bar.Low
+                | "Close" -> DbType.Decimal, box bar.Close
+                | "Volume" -> DbType.Int64, box (int64 bar.Volume)
+                | "PeriodS" -> DbType.Int32, box (int per.TotalSeconds)
+                | _ -> DbType.Object, null
+
+            addParam cmd name t v)
 
     let toTradeBar
         (symbol: Symbol)
@@ -109,7 +121,7 @@ module private Duck =
 [<RequireQualifiedAccess>]
 module DuckDbStore =
 
-    /// Batch upsert using multi-row VALUES with ON CONFLICT inside a single transaction
+    /// Batch upsert executing per row within a single transaction for reliable DuckDB parameter binding
     let upsert (connStr: string option) (symbol: Symbol) (resolution: Resolution) (bars: TradeBar array) : unit =
         if bars.Length = 0 then
             ()
@@ -120,74 +132,15 @@ module DuckDbStore =
 
             use tx = conn.BeginTransaction()
 
-            // Configure reasonable batch size: trade-off between SQL length and roundtrips
-            let batchSize = 1000
-            let total = bars.Length
-            let per = periodOf resolution
+            let exec bar =
+                use cmd = conn.CreateCommand()
+                cmd.Transaction <- tx
+                cmd.CommandText <- Duck.SqlParts.insertOnConflictSql
+                Duck.toParams cmd symbol resolution bar
+                cmd.ExecuteNonQuery() |> ignore
 
-            let dbTypeOf (c: string) =
-                match c with
-                | "Market"
-                | "Security"
-                | "Ticker"
-                | "Res" -> DbType.String
-                | "Time" -> DbType.DateTime
-                | "Open"
-                | "High"
-                | "Low"
-                | "Close" -> DbType.Decimal
-                | "Volume" -> DbType.Int64
-                | "PeriodS" -> DbType.Int32
-                | _ -> DbType.Object
+            Array.iter exec bars
 
-            let rec loop offset =
-                if offset >= total then
-                    ()
-                else
-                    let count = Math.Min(batchSize, total - offset)
-                    use cmd = conn.CreateCommand()
-                    cmd.Transaction <- tx
-
-                    // Build VALUES placeholders: ( @Market0, @Security0, ... ), ( @Market1, ... ), ...
-                    let valuesClauses =
-                        Array.init count (fun i ->
-                            let placeholders = SqlParts.All |> Array.map (fun c -> $"@{c}{i}")
-                            "(" + String.Join(", ", placeholders) + ")")
-
-                    cmd.CommandText <-
-                        $"INSERT INTO {SqlParts.Table} ({SqlParts.allCsv}) VALUES "
-                        + String.Join(", ", valuesClauses)
-                        + $" ON CONFLICT ({SqlParts.keyCsv}) DO UPDATE SET {SqlParts.updateSetCsv};"
-
-                    // Create parameters for this batch and assign values
-                    for i in 0 .. count - 1 do
-                        let bar = bars.[offset + i]
-
-                        for c in SqlParts.All do
-                            let name = $"@{c}{i}"
-                            let t = dbTypeOf c
-
-                            let v: obj =
-                                match c with
-                                | "Market" -> box symbol.ID.Market
-                                | "Security" -> box (symbol.ID.SecurityType.ToString().ToLowerInvariant())
-                                | "Ticker" -> box symbol.Value
-                                | "Res" -> box (Duck.resKey resolution)
-                                | "Time" -> box (bar.Time.ToUniversalTime())
-                                | "Open" -> box bar.Open
-                                | "High" -> box bar.High
-                                | "Low" -> box bar.Low
-                                | "Close" -> box bar.Close
-                                | "Volume" -> box (int64 bar.Volume)
-                                | "PeriodS" -> box (int per.TotalSeconds)
-                                | _ -> null
-
-                            Duck.addParam cmd name t v
-
-                    cmd.ExecuteNonQuery() |> ignore
-                    loop (offset + count)
-
-            loop 0
             tx.Commit()
 
 
@@ -230,12 +183,12 @@ module DuckDbStore =
         use cmd = conn.CreateCommand()
 
         cmd.CommandText <-
-            $"SELECT MIN(Time), MAX(Time), COUNT(*) FROM {Duck.SqlParts.Table} WHERE Market=@Market AND Security=@Security AND Ticker=@Ticker AND Res=@Res;"
+            $"SELECT MIN(Time), MAX(Time), COUNT(*) FROM {Duck.SqlParts.Table} WHERE Market=$1 AND Security=$2 AND Ticker=$3 AND Res=$4;"
 
-        Duck.addParam cmd "@Market" DbType.String (box symbol.ID.Market)
-        Duck.addParam cmd "@Security" DbType.String (box (symbol.ID.SecurityType.ToString().ToLowerInvariant()))
-        Duck.addParam cmd "@Ticker" DbType.String (box symbol.Value)
-        Duck.addParam cmd "@Res" DbType.String (box (Domain.resKey resolution))
+        Duck.addParam cmd "1" DbType.String (box symbol.ID.Market)
+        Duck.addParam cmd "2" DbType.String (box (symbol.ID.SecurityType.ToString().ToLowerInvariant()))
+        Duck.addParam cmd "3" DbType.String (box symbol.Value)
+        Duck.addParam cmd "4" DbType.String (box (Domain.resKey resolution))
 
         use reader = cmd.ExecuteReader()
 
@@ -278,14 +231,14 @@ module DuckDbStore =
         use cmd = conn.CreateCommand()
 
         cmd.CommandText <-
-            $"SELECT Time, Open, High, Low, Close, Volume FROM {Duck.SqlParts.Table} WHERE Market=@Market AND Security=@Security AND Ticker=@Ticker AND Res=@Res AND Time>=@FromUtc AND Time<@ToUtc ORDER BY Time ASC;"
+            $"SELECT Time, Open, High, Low, Close, Volume FROM {Duck.SqlParts.Table} WHERE Market=$1 AND Security=$2 AND Ticker=$3 AND Res=$4 AND Time>=$5 AND Time<$6 ORDER BY Time ASC;"
 
-        Duck.addParam cmd "@Market" DbType.String (box symbol.ID.Market)
-        Duck.addParam cmd "@Security" DbType.String (box (symbol.ID.SecurityType.ToString().ToLowerInvariant()))
-        Duck.addParam cmd "@Ticker" DbType.String (box symbol.Value)
-        Duck.addParam cmd "@Res" DbType.String (box (Domain.resKey resolution))
-        Duck.addParam cmd "@FromUtc" DbType.DateTime (box range.FromUtc)
-        Duck.addParam cmd "@ToUtc" DbType.DateTime (box range.ToUtc)
+        Duck.addParam cmd "1" DbType.String (box symbol.ID.Market)
+        Duck.addParam cmd "2" DbType.String (box (symbol.ID.SecurityType.ToString().ToLowerInvariant()))
+        Duck.addParam cmd "3" DbType.String (box symbol.Value)
+        Duck.addParam cmd "4" DbType.String (box (Domain.resKey resolution))
+        Duck.addParam cmd "5" DbType.DateTime (box range.FromUtc)
+        Duck.addParam cmd "6" DbType.DateTime (box range.ToUtc)
 
         use reader = cmd.ExecuteReader()
         let rows = System.Collections.Generic.List<TradeBar>()

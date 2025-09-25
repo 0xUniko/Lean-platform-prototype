@@ -30,11 +30,11 @@ TestResults/
 *.coverage
 *.coveragexml
 
-# --- SQLite databases ---
+# --- databases ---
 *.db
 *.sqlite
 *.sqlite3
-marketdata.db
+*.duckdb
 
 # --- Lean specific ---
 # Lean 的配置文件可以有多份：保留你自己的 build/launcher.config.json

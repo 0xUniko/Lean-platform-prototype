@@ -119,12 +119,7 @@ module BinanceDownloader =
 
         Seq.unfold nextState (rangeFrom, 0)
 
-    let fetchSpot
-        (symbol: Symbol)
-        (resolution: Resolution)
-        (range: DateRange)
-        (connection: string option)
-        : int =
+    let fetchSpot (symbol: Symbol) (resolution: Resolution) (range: DateRange) (connection: string option) : int =
 
         use client = new BinanceRestClient()
         let interval = toInterval resolution
@@ -142,9 +137,11 @@ module BinanceDownloader =
               FetchPage = fetchPage }
 
         streamBatches ctx symbol resolution period range
-        |> Seq.fold (fun total bars ->
-            SqliteStore.upsert connection symbol resolution bars
-            total + bars.Length) 0
+        |> Seq.fold
+            (fun total bars ->
+                DuckDbStore.upsert connection symbol resolution bars
+                total + bars.Length)
+            0
 
     /// futuresKind: "um" (USDT-M) | "cm" (Coin-M); persists each batch immediately
     let fetchFutures
@@ -188,4 +185,3 @@ module BinanceDownloader =
                 DuckDbStore.upsert connection symbol resolution bars
                 total + bars.Length)
             0
-

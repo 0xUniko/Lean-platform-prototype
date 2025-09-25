@@ -4,7 +4,6 @@ open System
 open Argu
 open Microsoft.EntityFrameworkCore
 open QuantConnect
-open QuantConnect.Data.Market
 
 // ------------------------------
 // 解析辅助
@@ -33,8 +32,66 @@ module private Parse =
             | "daily" -> Resolution.Daily
             | _ -> failwithf "Unknown resolution: %s" s
 
+    // ---- Strongly-typed enums for CLI ----
+    type AssetKind =
+        | Crypto
+        | CryptoFuture
+
+    type FuturesKind =
+        | Um // USDT-M
+        | Cm // Coin-M
+
+    let assetKindToSecurityType =
+        function
+        | AssetKind.Crypto -> SecurityType.Crypto
+        | AssetKind.CryptoFuture -> SecurityType.CryptoFuture
+
+    let assetKindName =
+        function
+        | AssetKind.Crypto -> "crypto"
+        | AssetKind.CryptoFuture -> "cryptofuture"
+
+    let futuresKindName =
+        function
+        | FuturesKind.Um -> "um"
+        | FuturesKind.Cm -> "cm"
+
+    // Data kind: trade bars vs quote (not implemented yet for quote)
+    type DataKind =
+        | Trade
+        | Quote
+
+    let dataKindName =
+        function
+        | DataKind.Trade -> "trade"
+        | DataKind.Quote -> "quote"
+
+    let parseAssetKind (sOpt: string option) =
+        match sOpt |> Option.map (fun s -> s.Trim().ToLowerInvariant()) with
+        | None -> AssetKind.Crypto
+        | Some "crypto" -> AssetKind.Crypto
+        | Some "cryptofuture" -> AssetKind.CryptoFuture
+        | Some other -> failwithf "Unknown asset: %s. Allowed: crypto | cryptofuture" other
+
+    // Validate and parse futures kind. Only valid when asset is CryptoFuture.
+    let parseFuturesKind (asset: AssetKind) (sOpt: string option) =
+        match asset, sOpt |> Option.map (fun s -> s.Trim().ToLowerInvariant()) with
+        | AssetKind.Crypto, None -> None
+        | AssetKind.Crypto, Some _ -> failwith "--futures/-f is only valid when --asset cryptofuture"
+        | AssetKind.CryptoFuture, None -> Some FuturesKind.Um // default
+        | AssetKind.CryptoFuture, Some "um" -> Some FuturesKind.Um
+        | AssetKind.CryptoFuture, Some "cm" -> Some FuturesKind.Cm
+        | AssetKind.CryptoFuture, Some other -> failwithf "Unknown futures kind: %s. Allowed: um | cm" other
+
+    let parseDataKind (sOpt: string option) =
+        match sOpt |> Option.map (fun s -> s.Trim().ToLowerInvariant()) with
+        | None -> DataKind.Trade
+        | Some "trade" -> DataKind.Trade
+        | Some "quote" -> DataKind.Quote
+        | Some other -> failwithf "Unknown kind: %s. Allowed: trade | quote" other
+
     /// 将用户输入规范化为 Lean 的 Market/Asset；不认识的直接报错
-    let makeSymbol (marketOpt: string option) (assetOpt: string option) (ticker: string) =
+    let makeSymbol (marketOpt: string option) (assetOpt: AssetKind option) (ticker: string) =
         let market =
             match marketOpt with
             | Some m -> m
@@ -66,9 +123,9 @@ module private Parse =
                     other
 
         let asset =
-            match assetOpt |> Option.map (fun s -> s.Trim().ToLowerInvariant()) with
-            | Some "cryptofuture" -> SecurityType.CryptoFuture
-            | _ -> SecurityType.Crypto
+            match assetOpt with
+            | Some a -> assetKindToSecurityType a
+            | None -> SecurityType.Crypto
 
         Symbol.Create(ticker.ToUpperInvariant(), asset, mkt)
 
@@ -190,22 +247,29 @@ module private Impl =
             { Domain.DateRange.FromUtc = start
               ToUtc = fin }
 
-        let asset =
-            args.TryGetResult Asset
-            |> Option.defaultValue "crypto"
-            |> fun s -> s.Trim().ToLowerInvariant()
-
-        let fut =
-            args.TryGetResult Futures
-            |> Option.defaultValue "um"
-            |> fun s -> s.Trim().ToLowerInvariant()
+        // Validate and parse enum-like options
+        let kind = args.TryGetResult Kind |> parseDataKind
+        let assetKind = args.TryGetResult Asset |> parseAssetKind
+        let futuresKindOpt = args.TryGetResult Futures |> parseFuturesKind assetKind
 
         for tkr in syms do
-            let symbol = makeSymbol mkt (Some asset) tkr
-            printfn "Downloading %s (%s) %A [%s .. %s) ..." tkr asset res (start.ToString("u")) (fin.ToString("u"))
+            let symbol = makeSymbol mkt (Some assetKind) tkr
 
-            if asset = "cryptofuture" then
-                let saved = BinanceDownloader.fetchFutures symbol res range fut conn
+            printfn
+                "Downloading %s (%s, %s) %A [%s .. %s) ..."
+                tkr
+                (assetKindName assetKind)
+                (dataKindName kind)
+                res
+                (start.ToString("u"))
+                (fin.ToString("u"))
+
+            // Only trade bars are implemented currently
+            if kind = Quote then
+                failwith "Kind=quote is not supported yet"
+            elif assetKind = CryptoFuture then
+                let fk = futuresKindOpt |> Option.get |> futuresKindName
+                let saved = BinanceDownloader.fetchFutures symbol res range fk conn
                 printfn "Saved %d bars for %s" saved tkr
             else
                 let saved = BinanceDownloader.fetchSpot symbol res range conn

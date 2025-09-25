@@ -1,4 +1,10 @@
-My [Lean](https://github.com/QuantConnect/Lean) platform prototyp
+My [Lean](https://github.com/QuantConnect/Lean) platform prototyp for lean Lean(my lean wrapper of Lean)
+
+Algorithm: 算法，包括策略和数据分析脚本等
+Launcher: 启动器，直接移植的Lean的Launcher，配置文件改成了toml格式，内容不变
+LeanSqlite.MarketData: 以后改名成Data，放各种行情数据等，可以单独使用
+Lean.Extension: Lean扩展，比如把Lean回测的数据源换成本地的Data
+
 
 TODO:
 仿照Lean cli以项目为主的管理方式，把我这里的Algorithm拆离出去
