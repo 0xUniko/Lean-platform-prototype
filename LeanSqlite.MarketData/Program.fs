@@ -368,12 +368,59 @@ module Program =
         let parser =
             ArgumentParser.Create<Commands>(programName = "leansqlite", errorHandler = errorHandler)
 
-        if argv.Length = 0 then
-            printfn
-                "Usage: leansqlite <command> [options]\nCommands: data | list | stats | vacuum | verify\nUse --help on each for details."
+        let isHelpArg =
+            function
+            | null -> false
+            | s when String.Equals(s, "--help", StringComparison.OrdinalIgnoreCase) -> true
+            | s when String.Equals(s, "-h", StringComparison.OrdinalIgnoreCase) -> true
+            | s when String.Equals(s, "help", StringComparison.OrdinalIgnoreCase) -> true
+            | _ -> false
 
+        let hasHelpArg (args: string array) = args |> Array.exists isHelpArg
+
+        let printRootUsage () =
+            parser.PrintUsage() |> printfn "%s"
+
+        let printCommandUsage (cmd: string) =
+            match cmd.Trim().ToLowerInvariant() with
+            | "data" ->
+                ArgumentParser
+                    .Create<DownloadArgs>(programName = "leansqlite data", errorHandler = errorHandler)
+                    .PrintUsage()
+                |> printfn "%s"
+            | "list" ->
+                ArgumentParser
+                    .Create<ListArgs>(programName = "leansqlite list", errorHandler = errorHandler)
+                    .PrintUsage()
+                |> printfn "%s"
+            | "stats" ->
+                ArgumentParser
+                    .Create<StatsArgs>(programName = "leansqlite stats", errorHandler = errorHandler)
+                    .PrintUsage()
+                |> printfn "%s"
+            | "vacuum" ->
+                ArgumentParser
+                    .Create<VacuumArgs>(programName = "leansqlite vacuum", errorHandler = errorHandler)
+                    .PrintUsage()
+                |> printfn "%s"
+            | "verify" ->
+                ArgumentParser
+                    .Create<VerifyArgs>(programName = "leansqlite verify", errorHandler = errorHandler)
+                    .PrintUsage()
+                |> printfn "%s"
+            | _ -> printRootUsage ()
+
+        match argv with
+        | [||] ->
+            printRootUsage ()
             0
-        else
+        | _ when hasHelpArg argv && isHelpArg argv[0] ->
+            printRootUsage ()
+            0
+        | _ when argv.Length > 0 && hasHelpArg argv[1..] ->
+            printCommandUsage argv[0]
+            0
+        | _ ->
             let results = parser.Parse(argv, raiseOnUsage = false)
 
             match results.GetSubCommand() with
