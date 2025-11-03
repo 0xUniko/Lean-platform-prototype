@@ -1,4 +1,4 @@
-namespace LeanSqlite.MarketData
+namespace LeanDuckDb.MarketData
 
 open System
 open System.Data
@@ -120,6 +120,10 @@ module private Duck =
 // ---------------------------
 [<RequireQualifiedAccess>]
 module DuckDbStore =
+    let defaultConnectionString = Duck.connString None
+
+    let resolveConnectionString (connStr: string option) =
+        Duck.connString connStr
 
     /// Batch upsert executing per row within a single transaction for reliable DuckDB parameter binding
     let upsert (connStr: string option) (symbol: Symbol) (resolution: Resolution) (bars: TradeBar array) : unit =
@@ -260,3 +264,12 @@ module DuckDbStore =
             rows.Add(Duck.toTradeBar symbol per t o h l c v)
 
         rows.ToArray()
+
+    let vacuum (connStr: string option) =
+        use conn = new DuckDBConnection(Duck.connString connStr)
+        conn.Open()
+        Duck.ensureSchema conn
+
+        use cmd = conn.CreateCommand()
+        cmd.CommandText <- "VACUUM;"
+        cmd.ExecuteNonQuery() |> ignore

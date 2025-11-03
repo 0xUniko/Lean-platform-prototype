@@ -11,7 +11,7 @@ namespace Algorithm
 open System
 open System.IO
 open System.Globalization
-open LeanSqlite.MarketData
+open LeanDuckDb.MarketData
 open QuantConnect
 open QuantConnect.Data.Market
 
@@ -34,7 +34,7 @@ module BtcusdtMinVolHist =
         // 取数
         // ---------------------------
         let bars =
-            SqliteStore.queryBars None symbol resolution range
+            DuckDbStore.queryBars None symbol resolution range
             |> Array.sortBy (fun (tb: TradeBar) -> tb.Time)
 
         // 足够样本才计算

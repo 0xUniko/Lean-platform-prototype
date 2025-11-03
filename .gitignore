@@ -32,8 +32,6 @@ TestResults/
 
 # --- databases ---
 *.db
-*.sqlite
-*.sqlite3
 *.duckdb
 
 # --- Lean specific ---

@@ -11,7 +11,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\lean\Common\QuantConnect.csproj" />
-    <ProjectReference Include="..\LeanSqlite.MarketData\LeanSqlite.MarketData.fsproj" />
+    <ProjectReference Include="..\LeanDuckDb.MarketData\LeanDuckDb.MarketData.fsproj" />
   </ItemGroup>
 
   <ItemGroup>

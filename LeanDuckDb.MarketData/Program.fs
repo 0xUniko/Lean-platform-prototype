@@ -1,8 +1,7 @@
-﻿namespace LeanSqlite.MarketData
+﻿namespace LeanDuckDb.MarketData
 
 open System
 open Argu
-open Microsoft.EntityFrameworkCore
 open QuantConnect
 
 // ------------------------------
@@ -257,10 +256,7 @@ module private Impl =
 
     let runVacuum (args: ParseResults<VacuumArgs>) =
         let conn = args.TryGetResult VacuumArgs.Connection
-
-        use ctx = new MarketDataContext(mkOptions conn)
-        ctx.Database.EnsureCreated() |> ignore
-        ctx.Database.ExecuteSqlRaw "VACUUM;" |> ignore
+        DuckDbStore.vacuum conn
         printfn "VACUUM done."
 
 // ------------------------------
@@ -278,7 +274,7 @@ module Program =
             )
 
         let parser =
-            ArgumentParser.Create<Commands>(programName = "leansqlite", errorHandler = errorHandler)
+            ArgumentParser.Create<Commands>(programName = "leanduckdb", errorHandler = errorHandler)
 
         let isHelpArg =
             function
@@ -297,17 +293,17 @@ module Program =
             match cmd.Trim().ToLowerInvariant() with
             | "data" ->
                 ArgumentParser
-                    .Create<DownloadArgs>(programName = "leansqlite data", errorHandler = errorHandler)
+                    .Create<DownloadArgs>(programName = "leanduckdb data", errorHandler = errorHandler)
                     .PrintUsage()
                 |> printfn "%s"
             | "list" ->
                 ArgumentParser
-                    .Create<ListArgs>(programName = "leansqlite list", errorHandler = errorHandler)
+                    .Create<ListArgs>(programName = "leanduckdb list", errorHandler = errorHandler)
                     .PrintUsage()
                 |> printfn "%s"
             | "vacuum" ->
                 ArgumentParser
-                    .Create<VacuumArgs>(programName = "leansqlite vacuum", errorHandler = errorHandler)
+                    .Create<VacuumArgs>(programName = "leanduckdb vacuum", errorHandler = errorHandler)
                     .PrintUsage()
                 |> printfn "%s"
             | _ -> printRootUsage ()

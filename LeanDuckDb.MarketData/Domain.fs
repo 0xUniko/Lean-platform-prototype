@@ -1,4 +1,4 @@
-namespace LeanSqlite.MarketData
+namespace LeanDuckDb.MarketData
 
 open System
 open QuantConnect

@@ -29,16 +29,10 @@ type MyDataProvider() as this =
     
 
     // Build in-memory zip stream for a given date+symbol with constant OHLC values
-    // Locate the sqlite db connection string like SqliteHistoryProvider does
+    // Locate the DuckDB connection string (defaults to the library-provided path)
     let getConnStr () =
-        let pwd = Environment.GetEnvironmentVariable("PWD")
-        let inferred =
-            if String.IsNullOrWhiteSpace pwd then
-                Path.Combine(Directory.GetCurrentDirectory(), "marketdata.db")
-            else
-                Path.Combine(pwd, "LeanSqlite.MarketData", "marketdata.db")
-        let defaultConn = $"Data Source={inferred}"
-        Config.Get("sqlite-connection", defaultConn)
+        let defaultConn = LeanDuckDb.MarketData.DuckDbStore.defaultConnectionString
+        Config.Get("duckdb-connection", defaultConn)
 
     // Build in-memory zip from DB (crypto minute trade bars for a given date)
     let buildCryptoMinuteZipFromDb (market: string) (symbolLower: string) (date: DateTime) : Stream =
@@ -46,8 +40,8 @@ type MyDataProvider() as this =
         let res = Resolution.Minute
         let fromUtc = DateTime(date.Year, date.Month, date.Day, 0, 0, 0, DateTimeKind.Utc)
         let toUtc = fromUtc.AddDays(1.0)
-        let range : LeanSqlite.MarketData.Domain.DateRange = { FromUtc = fromUtc; ToUtc = toUtc }
-        let bars : QuantConnect.Data.Market.TradeBar[] = LeanSqlite.MarketData.SqliteStore.queryBars (Some (getConnStr())) symbol res range
+        let range : LeanDuckDb.MarketData.Domain.DateRange = { FromUtc = fromUtc; ToUtc = toUtc }
+        let bars : QuantConnect.Data.Market.TradeBar[] = LeanDuckDb.MarketData.DuckDbStore.queryBars (Some (getConnStr())) symbol res range
 
         let entryName = QuantConnect.Util.LeanData.GenerateZipEntryName(symbol, date, res, TickType.Trade)
 
@@ -83,8 +77,8 @@ type MyDataProvider() as this =
         let res = Resolution.Minute
         let fromUtc = DateTime(date.Year, date.Month, date.Day, 0, 0, 0, DateTimeKind.Utc)
         let toUtc = fromUtc.AddDays(1.0)
-        let range : LeanSqlite.MarketData.Domain.DateRange = { FromUtc = fromUtc; ToUtc = toUtc }
-        let bars : QuantConnect.Data.Market.TradeBar[] = LeanSqlite.MarketData.SqliteStore.queryBars (Some (getConnStr())) symbol res range
+        let range : LeanDuckDb.MarketData.Domain.DateRange = { FromUtc = fromUtc; ToUtc = toUtc }
+        let bars : QuantConnect.Data.Market.TradeBar[] = LeanDuckDb.MarketData.DuckDbStore.queryBars (Some (getConnStr())) symbol res range
 
         let entryName = QuantConnect.Util.LeanData.GenerateZipEntryName(symbol, date, res, TickType.Trade)
 
@@ -120,7 +114,7 @@ type MyDataProvider() as this =
 
             let result =
                 try
-                    // Handle crypto minute TRADE from sqlite market data
+                    // Handle crypto minute TRADE from DuckDB market data
                     match cryptoMinuteZip.Match(key) with
                     | m when m.Success ->
                         let market = m.Groups.["mkt"].Value.ToLowerInvariant()
@@ -131,7 +125,7 @@ type MyDataProvider() as this =
 
                         buildCryptoMinuteZipFromDb market sym date
                     | _ ->
-                    // Handle cryptofuture minute TRADE from sqlite
+                    // Handle cryptofuture minute TRADE from DuckDB
                     match cryptoFutureMinuteZip.Match(key) with
                     | fm when fm.Success ->
                         let market = fm.Groups.["mkt"].Value.ToLowerInvariant()

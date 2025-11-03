@@ -1,13 +1,13 @@
 # Lean Lean
 
-My [Lean](https://github.com/QuantConnect/Lean) platform prototyp for lean Lean(my lean wrapper of Lean, (plan to) supporting onchain trading)
+A lean wrapper of [Lean](https://github.com/QuantConnect/Lean), supporting onchain trading
 
 Algorithm: 算法，包括策略和数据分析脚本等
 
 Launcher: 启动器，直接移植的Lean的Launcher，配置文件改成了toml格式，内容不变
 example: dotnet run --project Launcher -- -c Launcher/backtesting.toml
 
-LeanSqlite.MarketData: 以后改名成Data，放各种行情数据等，可以单独使用
+LeanDuckDb.MarketData: DuckDB 行情数据工具集，可单独使用
 Lean.Extension: Lean扩展，比如把Lean回测的数据源换成本地的Data
 
 TODO:
@@ -70,7 +70,7 @@ Crypto: 如 Binance Vision（bookTicker/aggTrades/klines/depth 等原始数据�
 商业数据供应商/API
 如 Polygon, Tiingo, IEX Cloud, CME DataMine 等，需按其许可与 API 拉取后落盘为 Lean 标准目录。
 自建数据管道
-你的工程已实现 SQLite → Zip on-the-fly（Lean.Extension/MyDataProvider.fs + LeanSqlite.MarketData/SqliteStore.fs），可继续扩展生成 _quote.zip、小时/日线聚合以及 tick。
+你的工程已实现 DuckDB → Zip on-the-fly（Lean.Extension/MyDataProvider.fs + LeanDuckDb.MarketData/DuckDbStore.fs），可继续扩展生成 _quote.zip、小时/日线聚合以及 tick。
 需要的话，我可以：
 
 在 MyDataProvider.fs 增加 _quote.zip 的生成（用你现有分钟 TradeBar 合成对称 Quote，或接入你将来从 Binance bookTicker 聚合的数据）。
