@@ -1,4 +1,4 @@
-ï»¿(*
+(*
  * QUANTCONNECT.COM - Democratizing Finance, Empowering Individuals.
  * Lean Algorithmic Trading Engine v2.0. Copyright 2014 QuantConnect Corporation.
  *
@@ -242,21 +242,21 @@ module Program =
 
         let assertHasAlgorithmLocation (src: JsonElement) : unit =
             if src.ValueKind <> JsonValueKind.Object then
-                failwith "é…ç½®æ ¹èŠ‚ç‚¹ä¸æ˜¯å¯¹è±¡ï¼ˆåº”ä¸º TOML çš„é¡¶å±‚è¡¨ï¼‰ã€‚"
+                failwith "ÅäÖÃ¸ù½Úµã²»ÊÇ¶ÔÏó£¨Ó¦Îª TOML µÄ¶¥²ã±í£©¡£"
 
             let mutable prop = Unchecked.defaultof<JsonElement>
             let ok = src.TryGetProperty("algorithm-location", &prop)
 
             if not ok then
-                failwith "é…ç½®ç¼ºå°‘å¿…éœ€é”®ï¼šalgorithm-locationï¼ˆè¯·åœ¨ TOML æ ¹çº§æŒ‡å®šç®—æ³• DLL/è„šæœ¬è·¯å¾„ï¼‰ã€‚"
+                failwith "ÅäÖÃÈ±ÉÙ±ØĞè¼ü£ºalgorithm-location£¨ÇëÔÚ TOML ¸ù¼¶Ö¸¶¨Ëã·¨ DLL/½Å±¾Â·¾¶£©¡£"
 
             if prop.ValueKind <> JsonValueKind.String then
-                failwith "algorithm-location å¿…é¡»æ˜¯å­—ç¬¦ä¸²ã€‚"
+                failwith "algorithm-location ±ØĞëÊÇ×Ö·û´®¡£"
 
             let v = prop.GetString()
 
             if String.IsNullOrWhiteSpace v then
-                failwith "algorithm-location ä¸èƒ½ä¸ºç©ºå­—ç¬¦ä¸²ã€‚"
+                failwith "algorithm-location ²»ÄÜÎª¿Õ×Ö·û´®¡£"
 
         // let writeJson (path: string) (je: JsonElement) =
         //     use fs = File.Create path
@@ -277,23 +277,23 @@ module Program =
                 if File.Exists p then
                     Path.GetFullPath p
                 else
-                    failwithf "æœªæ‰¾åˆ° TOML é…ç½®æ–‡ä»¶ï¼š%s" p
+                    failwithf "Î´ÕÒµ½ TOML ÅäÖÃÎÄ¼ş£º%s" p
             else
                 let p = Path.Combine(Directory.GetCurrentDirectory(), input + ".toml")
 
                 if File.Exists p then
                     Path.GetFullPath p
                 else
-                    failwithf "æœªåœ¨å½“å‰å·¥ä½œç›®å½•æ‰¾åˆ° TOML é…ç½®æ–‡ä»¶ï¼š%s" p
+                    failwithf "Î´ÔÚµ±Ç°¹¤×÷Ä¿Â¼ÕÒµ½ TOML ÅäÖÃÎÄ¼ş£º%s" p
 
-        // å°† JsonElement è½¬ä¸º Dictionary<string, obj> ä»¥ä¾› Config.MergeCommandLineArgumentsWithConfiguration ä½¿ç”¨
+        // ½« JsonElement ×ªÎª Dictionary<string, obj> ÒÔ¹© Config.MergeCommandLineArgumentsWithConfiguration Ê¹ÓÃ
         let rec private jsonToObj (je: JsonElement) : obj =
             match je.ValueKind with
             | JsonValueKind.Null
             | JsonValueKind.Undefined -> null
             | JsonValueKind.String -> box (je.GetString())
             | JsonValueKind.Number ->
-                // å°è¯•ä¿ç•™æ•´æ•°ï¼Œå¦åˆ™ä¸º double
+                // ³¢ÊÔ±£ÁôÕûÊı£¬·ñÔòÎª double
                 match je.TryGetInt64() with
                 | true, v -> box v
                 | _ -> box (je.GetDouble())
@@ -317,7 +317,7 @@ module Program =
 
         let toDictionary (je: JsonElement) : Collections.Generic.Dictionary<string, obj> =
             if je.ValueKind <> JsonValueKind.Object then
-                failwith "TOML é¡¶å±‚å¿…é¡»æ˜¯å¯¹è±¡/è¡¨ã€‚"
+                failwith "TOML ¶¥²ã±ØĞëÊÇ¶ÔÏó/±í¡£"
 
             jsonToObj je :?> Collections.Generic.Dictionary<string, obj>
 
@@ -329,80 +329,95 @@ module Program =
         interface IArgParserTemplate with
             member x.Usage =
                 match x with
-                | Config _ -> "TOML é…ç½®æ–‡ä»¶è·¯å¾„ï¼Œæˆ–åªå†™æ–‡ä»¶åï¼ˆä¸å«è·¯å¾„ï¼‰ï¼Œå°†ä»å½“å‰å·¥ä½œç›®å½•æŸ¥æ‰¾åŒå .tomlã€‚ï¼ˆæ³¨æ„ï¼šTOML å¿…é¡»åŒ…å«æ ¹çº§é”® algorithm-locationï¼‰"
-                | NoBuild -> "è·³è¿‡åœ¨è¿è¡Œå‰å¯¹ Algorithm é¡¹ç›®çš„æ„å»ºã€‚"
-                | Hello -> "æ‰“å°æ¢æµ‹ä¿¡æ¯ã€‚"
+                | Config _ -> "TOML ÅäÖÃÎÄ¼şÂ·¾¶£¬»òÖ»Ğ´ÎÄ¼şÃû£¨²»º¬Â·¾¶£©£¬½«´Óµ±Ç°¹¤×÷Ä¿Â¼²éÕÒÍ¬Ãû .toml¡££¨×¢Òâ£ºTOML ±ØĞë°üº¬¸ù¼¶¼ü algorithm-location£©"
+                | NoBuild -> "Ìø¹ıÔÚÔËĞĞÇ°¶Ô Algorithm ÏîÄ¿µÄ¹¹½¨¡£"
+                | Hello -> "´òÓ¡Ì½²âĞÅÏ¢¡£"
 
     [<EntryPoint>]
     let main (argv: string array) =
         let parser = ArgumentParser.Create<CLIArgs>(programName = "launcher")
-        let results = parser.Parse argv
 
-        match results.TryGetResult Config with
-        | Some tomlArg ->
-            try
-                let tomlPath = TomlToJson.resolveTomlPath tomlArg
-                let cfg = TomlToJson.fromTomlFile tomlPath
-                TomlToJson.assertHasAlgorithmLocation cfg
+        let isHelpArg =
+            function
+            | null -> false
+            | s when String.Equals(s, "--help", StringComparison.OrdinalIgnoreCase) -> true
+            | s when String.Equals(s, "-h", StringComparison.OrdinalIgnoreCase) -> true
+            | s when String.Equals(s, "help", StringComparison.OrdinalIgnoreCase) -> true
+            | _ -> false
 
-                // run a quick build of the Algorithm project unless --no-build is specified
-                let skipBuild =
-                    match results.TryGetResult NoBuild with
-                    | Some _ -> true
-                    | None -> false
+        let printUsage () = parser.PrintUsage() |> printfn "%s"
 
-                // pre-build Algorithm project in Debug configuration
-                let buildExitCode =
-                    if skipBuild then 0 else
-                        try
-                            let projPath = Path.Combine(Directory.GetCurrentDirectory(), "Algorithm", "Algorithm.fsproj")
-                            if not (File.Exists projPath) then
-                                Console.Error.WriteLine($"æœªæ‰¾åˆ°ç®—æ³•é¡¹ç›®æ–‡ä»¶ï¼š{projPath}")
-                                3
-                            else
-                                let startInfo = new System.Diagnostics.ProcessStartInfo()
-                                startInfo.FileName <- "dotnet"
-                                startInfo.Arguments <- $"build \"{projPath}\" -c Debug"
-                                startInfo.WorkingDirectory <- Path.GetDirectoryName projPath
-                                startInfo.RedirectStandardOutput <- true
-                                startInfo.RedirectStandardError <- true
-                                startInfo.UseShellExecute <- false
-                                use p = System.Diagnostics.Process.Start(startInfo)
-                                p.OutputDataReceived.Add(fun e -> if not (isNull e.Data) then Console.WriteLine e.Data)
-                                p.ErrorDataReceived.Add(fun e -> if not (isNull e.Data) then Console.Error.WriteLine e.Data)
-                                p.BeginOutputReadLine()
-                                p.BeginErrorReadLine()
-                                p.WaitForExit()
-                                if p.ExitCode <> 0 then
-                                    Console.Error.WriteLine($"Algorithm æ„å»ºå¤±è´¥ï¼Œé€€å‡ºç  {p.ExitCode}")
+        if Array.exists isHelpArg argv then
+            printUsage ()
+            0
+        else
+            let results = parser.Parse argv
+
+            match results.TryGetResult Config with
+            | Some tomlArg ->
+                try
+                    let tomlPath = TomlToJson.resolveTomlPath tomlArg
+                    let cfg = TomlToJson.fromTomlFile tomlPath
+                    TomlToJson.assertHasAlgorithmLocation cfg
+    
+                    // run a quick build of the Algorithm project unless --no-build is specified
+                    let skipBuild =
+                        match results.TryGetResult NoBuild with
+                        | Some _ -> true
+                        | None -> false
+    
+                    // pre-build Algorithm project in Debug configuration
+                    let buildExitCode =
+                        if skipBuild then 0 else
+                            try
+                                let projPath = Path.Combine(Directory.GetCurrentDirectory(), "Algorithm", "Algorithm.fsproj")
+                                if not (File.Exists projPath) then
+                                    Console.Error.WriteLine($"Î´ÕÒµ½Ëã·¨ÏîÄ¿ÎÄ¼ş£º{projPath}")
+                                    3
                                 else
-                                    Console.WriteLine("Algorithm é¢„æ„å»ºå®Œæˆï¼ˆDebugï¼‰ã€‚")
-                                p.ExitCode
-                        with ex ->
-                            Console.Error.WriteLine($"æ„å»º Algorithm é¡¹ç›®æ—¶å‡ºé”™ï¼š{ex.Message}")
-                            3
-
-                if buildExitCode <> 0 then
-                    buildExitCode
-                else
-                    // in-memory åˆå¹¶ï¼ˆä¸è½åœ° JSON æ–‡ä»¶ï¼‰å¹¶å¯åŠ¨å¼•æ“
-                    TomlToJson.toDictionary cfg |> launch |> ignore
-                    0
-
-                // è°ƒè¯•ç”¨é€”ï¼šæŠŠè§£æåçš„é…ç½®å†™å…¥æœ¬åœ° config.json ä¾¿äºæ ¸å¯¹
-                // let debugConfigPath = Path.Combine(Directory.GetCurrentDirectory(), "config.json")
-                // TomlToJson.writeJson debugConfigPath cfg
-
-            // launch (Some argsDict)
-            with ex ->
-                Console.Error.WriteLine($"TOML è§£æå¤±è´¥ï¼š{ex.Message}")
-                2
-        | None ->
-            match results.TryGetResult Hello with
-            | Some _ ->
-                Console.WriteLine("ç”¨æ³•ï¼šlauncher -c <é…ç½®.toml>")
-                Console.WriteLine("ç¤ºä¾‹ï¼šdotnet run --project Launcher -- -c Launcher/backtesting.toml")
-                1
+                                    let startInfo = new System.Diagnostics.ProcessStartInfo()
+                                    startInfo.FileName <- "dotnet"
+                                    startInfo.Arguments <- $"build \"{projPath}\" -c Debug"
+                                    startInfo.WorkingDirectory <- Path.GetDirectoryName projPath
+                                    startInfo.RedirectStandardOutput <- true
+                                    startInfo.RedirectStandardError <- true
+                                    startInfo.UseShellExecute <- false
+                                    use p = System.Diagnostics.Process.Start(startInfo)
+                                    p.OutputDataReceived.Add(fun e -> if not (isNull e.Data) then Console.WriteLine e.Data)
+                                    p.ErrorDataReceived.Add(fun e -> if not (isNull e.Data) then Console.Error.WriteLine e.Data)
+                                    p.BeginOutputReadLine()
+                                    p.BeginErrorReadLine()
+                                    p.WaitForExit()
+                                    if p.ExitCode <> 0 then
+                                        Console.Error.WriteLine($"Algorithm ¹¹½¨Ê§°Ü£¬ÍË³öÂë {p.ExitCode}")
+                                    else
+                                        Console.WriteLine("Algorithm Ô¤¹¹½¨Íê³É£¨Debug£©¡£")
+                                    p.ExitCode
+                            with ex ->
+                                Console.Error.WriteLine($"¹¹½¨ Algorithm ÏîÄ¿Ê±³ö´í£º{ex.Message}")
+                                3
+    
+                    if buildExitCode <> 0 then
+                        buildExitCode
+                    else
+                        // in-memory ºÏ²¢£¨²»ÂäµØ JSON ÎÄ¼ş£©²¢Æô¶¯ÒıÇæ
+                        TomlToJson.toDictionary cfg |> launch |> ignore
+                        0
+    
+                    // µ÷ÊÔÓÃÍ¾£º°Ñ½âÎöºóµÄÅäÖÃĞ´Èë±¾µØ config.json ±ãÓÚºË¶Ô
+                    // let debugConfigPath = Path.Combine(Directory.GetCurrentDirectory(), "config.json")
+                    // TomlToJson.writeJson debugConfigPath cfg
+    
+                // launch (Some argsDict)
+                with ex ->
+                    Console.Error.WriteLine($"TOML ½âÎöÊ§°Ü£º{ex.Message}")
+                    2
             | None ->
-                Console.WriteLine("è¯·ä½¿ç”¨ -c <é…ç½®.toml> æŒ‡å®šé…ç½®æ–‡ä»¶ï¼›æˆ–ç”¨ --help æŸ¥çœ‹å¸®åŠ©ã€‚")
-                1
+                match results.TryGetResult Hello with
+                | Some _ ->
+                    Console.WriteLine("ÓÃ·¨£ºlauncher -c <ÅäÖÃ.toml>")
+                    Console.WriteLine("Ê¾Àı£ºdotnet run --project Launcher -- -c Launcher/backtesting.toml")
+                    1
+                | None ->
+                    Console.WriteLine("ÇëÊ¹ÓÃ -c <ÅäÖÃ.toml> Ö¸¶¨ÅäÖÃÎÄ¼ş£»»òÓÃ --help ²é¿´°ïÖú¡£")
+                    1
