@@ -164,56 +164,24 @@ type ListArgs =
     interface IArgParserTemplate with
         member _.Usage = "列出库内已有 (market/security/ticker/res) 及行数"
 
-type StatsArgs =
-    | [<AltCommandLine("-s")>] Symbol of string
-    | [<AltCommandLine("-m")>] Market of string
-    | [<AltCommandLine("-r")>] Resolution of string
-    | [<AltCommandLine("-c")>] Connection of string
-
-    interface IArgParserTemplate with
-        member s.Usage =
-            match s with
-            | Symbol _ -> "交易对（如 BTCUSDT）"
-            | Market _ -> "市场（默认 Binance）"
-            | Resolution _ -> "K线周期（默认 Minute）"
-            | Connection _ -> "SQLite 连接串（默认 Data Source=marketdata.db）"
-
 type VacuumArgs =
     | [<AltCommandLine("-c")>] Connection of string
 
     interface IArgParserTemplate with
         member _.Usage = "VACUUM 压缩数据库"
 
-type VerifyArgs =
-    | [<AltCommandLine("-s")>] Symbol of string
-    | [<AltCommandLine("-m")>] Market of string
-    | [<AltCommandLine("-r")>] Resolution of string
-    | [<AltCommandLine("-c")>] Connection of string
-
-    interface IArgParserTemplate with
-        member s.Usage =
-            match s with
-            | Symbol _ -> "交易对（如 BTCUSDT）"
-            | Market _ -> "市场（默认 Binance）"
-            | Resolution _ -> "K线周期（默认 Minute）"
-            | Connection _ -> "SQLite 连接串（默认 Data Source=marketdata.db）"
-
 [<CliPrefix(CliPrefix.None)>]
 type Commands =
     | Data of ParseResults<DownloadArgs>
     | List of ParseResults<ListArgs>
-    | Stats of ParseResults<StatsArgs>
     | Vacuum of ParseResults<VacuumArgs>
-    | Verify of ParseResults<VerifyArgs>
 
     interface IArgParserTemplate with
         member s.Usage =
             match s with
             | Data _ -> "下载并写入历史行情（trade bars）"
             | List _ -> "列出库内已有的 (market/security/ticker/res) 及行数"
-            | Stats _ -> "查看某合约的时间范围与行数"
             | Vacuum _ -> "VACUUM 压缩数据库"
-            | Verify _ -> "检查连续性（简单缺口检测）"
 
 // ------------------------------
 // 子命令实现
@@ -287,24 +255,6 @@ module private Impl =
             for m, s, t, r, startT, endT in rows do
                 printfn "%-8s %-8s %-12s %-5s %s %s" m s t r (startT.ToString("u")) (endT.ToString("u"))
 
-    let runStats (args: ParseResults<StatsArgs>) =
-        let conn = args.TryGetResult StatsArgs.Connection
-
-        let mkt = args.TryGetResult StatsArgs.Market
-
-        let res = args.TryGetResult StatsArgs.Resolution |> parseRes
-
-        let tkr =
-            match args.TryGetResult StatsArgs.Symbol with
-            | Some s -> s
-            | None -> failwith "需要 --symbol"
-
-        let symbol = makeSymbol mkt None tkr
-
-        match DuckDbStore.datasetStats conn symbol res with
-        | None -> printfn "No rows for %s %A." tkr res
-        | Some(fromT, toT, n) -> printfn "%s %A: %d bars [%s .. %s]" tkr res n (fromT.ToString("u")) (toT.ToString("u"))
-
     let runVacuum (args: ParseResults<VacuumArgs>) =
         let conn = args.TryGetResult VacuumArgs.Connection
 
@@ -312,44 +262,6 @@ module private Impl =
         ctx.Database.EnsureCreated() |> ignore
         ctx.Database.ExecuteSqlRaw "VACUUM;" |> ignore
         printfn "VACUUM done."
-
-    let runVerify (args: ParseResults<VerifyArgs>) =
-        let conn = args.TryGetResult Connection
-        let mkt = args.TryGetResult Market
-        let res = args.TryGetResult Resolution |> parseRes
-
-        let tkr =
-            match args.TryGetResult <@ Symbol @> with
-            | Some s -> s
-            | None -> failwith "需要 --symbol"
-
-        let symbol = makeSymbol mkt None tkr
-        let per = periodOf res
-
-        let all =
-            DuckDbStore.queryBars
-                conn
-                symbol
-                res
-                { FromUtc = DateTime.MinValue
-                  ToUtc = DateTime.MaxValue }
-
-        if all.Length <= 1 then
-            printfn "Rows: %d (nothing to verify)" all.Length
-        else
-            let mutable gaps = 0
-
-            for i = 1 to all.Length - 1 do
-                let expected = all[i - 1].Time + per
-
-                if all[i].Time <> expected then
-                    gaps <- gaps + 1
-                    printfn "Gap between %s and %s" (all[i - 1].Time.ToString("u")) (all[i].Time.ToString("u"))
-
-            if gaps = 0 then
-                printfn "No gaps. Rows=%d" all.Length
-            else
-                printfn "Found %d gaps. Rows=%d" gaps all.Length
 
 // ------------------------------
 // 程序入口
@@ -393,19 +305,9 @@ module Program =
                     .Create<ListArgs>(programName = "leansqlite list", errorHandler = errorHandler)
                     .PrintUsage()
                 |> printfn "%s"
-            | "stats" ->
-                ArgumentParser
-                    .Create<StatsArgs>(programName = "leansqlite stats", errorHandler = errorHandler)
-                    .PrintUsage()
-                |> printfn "%s"
             | "vacuum" ->
                 ArgumentParser
                     .Create<VacuumArgs>(programName = "leansqlite vacuum", errorHandler = errorHandler)
-                    .PrintUsage()
-                |> printfn "%s"
-            | "verify" ->
-                ArgumentParser
-                    .Create<VerifyArgs>(programName = "leansqlite verify", errorHandler = errorHandler)
                     .PrintUsage()
                 |> printfn "%s"
             | _ -> printRootUsage ()
@@ -430,12 +332,6 @@ module Program =
             | List sub ->
                 Impl.runList sub
                 0
-            | Stats sub ->
-                Impl.runStats sub
-                0
             | Vacuum sub ->
                 Impl.runVacuum sub
-                0
-            | Verify sub ->
-                Impl.runVerify sub
                 0

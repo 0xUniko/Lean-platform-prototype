@@ -138,35 +138,6 @@ module SqliteStore =
         q
 
 
-    /// 统计某合约的时间范围与K线数量
-    let datasetStats (connStr: string option) (symbol: Symbol) (resolution: Resolution) =
-        use ctx = new MarketDataContext(mkOptions connStr)
-        ctx.Database.EnsureCreated() |> ignore
-
-        let m = symbol.ID.Market
-        let s = symbol.ID.SecurityType.ToString().ToLowerInvariant()
-        let t = symbol.Value
-        let rk = resKey resolution
-
-        let sw = Diagnostics.Stopwatch.StartNew()
-
-        let q =
-            query {
-                for c in ctx.Candles do
-                    where (c.Market = m && c.Security = s && c.Ticker = t && c.Res = rk)
-                    select c.Time
-            }
-
-        let times = q |> Seq.sort |> Seq.toArray
-
-        sw.Stop()
-        printfn "Query executed in: %d ms" sw.ElapsedMilliseconds
-
-        if times.Length = 0 then
-            None
-        else
-            Some(times[0], times[times.Length - 1], times.Length)
-
     /// LINQ 查询：返回按时间升序的 TradeBar 列表
     let queryBars (connStr: string option) (symbol: Symbol) (resolution: Resolution) (range: Domain.DateRange) =
         use ctx = new MarketDataContext(mkOptions connStr)

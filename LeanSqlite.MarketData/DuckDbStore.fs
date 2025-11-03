@@ -222,48 +222,6 @@ module DuckDbStore =
 
         buf.ToArray()
 
-
-    /// Stats: (minTime, maxTime, count) for a symbol/resolution
-    let datasetStats (connStr: string option) (symbol: Symbol) (resolution: Resolution) =
-        use conn = new DuckDBConnection(connString connStr)
-        conn.Open()
-        Duck.ensureSchema conn
-
-        use cmd = conn.CreateCommand()
-
-        cmd.CommandText <-
-            $"SELECT MIN(Time), MAX(Time), COUNT(*) FROM {Duck.SqlParts.Table} WHERE Market=$1 AND Security=$2 AND Ticker=$3 AND Res=$4;"
-
-        Duck.addParam cmd "1" DbType.String (box symbol.ID.Market)
-        Duck.addParam cmd "2" DbType.String (box (symbol.ID.SecurityType.ToString().ToLowerInvariant()))
-        Duck.addParam cmd "3" DbType.String (box symbol.Value)
-        Duck.addParam cmd "4" DbType.String (box (Domain.resKey resolution))
-
-        use reader = cmd.ExecuteReader()
-
-        if reader.Read() then
-            let cnt = reader.GetInt64(2)
-
-            if cnt = 0L then
-                None
-            else
-                let minT =
-                    if reader.IsDBNull(0) then
-                        Nullable()
-                    else
-                        reader.GetFieldValue<DateTime> 0 |> Nullable
-
-                let maxT =
-                    if reader.IsDBNull 1 then
-                        Nullable()
-                    else
-                        reader.GetFieldValue<DateTime> 1 |> Nullable
-
-                Some(minT.Value, maxT.Value, int cnt)
-        else
-            None
-
-
     /// Query TradeBars in ascending time order for a given range
     let queryBars
         (connStr: string option)
