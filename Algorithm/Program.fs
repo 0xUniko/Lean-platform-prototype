@@ -1,5 +1,3 @@
-﻿namespace Algorithm
+namespace Algorithm
 
-module Say =
-    let hello name =
-        printfn "Hello %s" name
+// Placeholder module intentionally left blank after removing legacy greeting sample.

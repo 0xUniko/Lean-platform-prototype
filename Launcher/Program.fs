@@ -324,14 +324,12 @@ module Program =
     type CLIArgs =
         | [<AltCommandLine("-c")>] Config of string
         | [<AltCommandLine("--no-build")>] NoBuild
-        | Hello
 
         interface IArgParserTemplate with
             member x.Usage =
                 match x with
                 | Config _ -> "TOML 配置文件路径；可写文件名或完整路径，若仅提供文件名会在当前工作目录查找同名 .toml。注意：TOML 配置必须包含 algorithm-location。"
                 | NoBuild -> "跳过预构建当前 Algorithm 项目"
-                | Hello -> "打印介绍信息"
 
     [<EntryPoint>]
     let main (argv: string array) =
@@ -415,11 +413,5 @@ module Program =
                     Console.Error.WriteLine($"TOML 解析失败：{ex.Message}")
                     2
             | None ->
-                match results.TryGetResult Hello with
-                | Some _ ->
-                    Console.WriteLine("用法：launcher -c <配置.toml>")
-                    Console.WriteLine("示例：dotnet run --project Launcher -- -c Launcher/backtesting.toml")
-                    1
-                | None ->
                     Console.WriteLine("请使用 -c <配置.toml> 指定配置文件，或 --help 查看详细帮助")
                     1
