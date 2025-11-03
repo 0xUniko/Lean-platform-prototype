@@ -1,4 +1,4 @@
-(*
+ï»¿(*
  * QUANTCONNECT.COM - Democratizing Finance, Empowering Individuals.
  * Lean Algorithmic Trading Engine v2.0. Copyright 2014 QuantConnect Corporation.
  *
@@ -242,21 +242,21 @@ module Program =
 
         let assertHasAlgorithmLocation (src: JsonElement) : unit =
             if src.ValueKind <> JsonValueKind.Object then
-                failwith "ÅäÖÃ¸ù½Úµã²»ÊÇ¶ÔÏó£¨Ó¦Îª TOML µÄ¶¥²ã±í£©¡£"
+                failwith "ä¼ å…¥çš„æ ¹èŠ‚ç‚¹ä¸æ˜¯å¯¹è±¡ï¼Œåº”ä¸º TOML çš„è¡¨ç±»å‹"
 
             let mutable prop = Unchecked.defaultof<JsonElement>
             let ok = src.TryGetProperty("algorithm-location", &prop)
 
             if not ok then
-                failwith "ÅäÖÃÈ±ÉÙ±ØĞè¼ü£ºalgorithm-location£¨ÇëÔÚ TOML ¸ù¼¶Ö¸¶¨Ëã·¨ DLL/½Å±¾Â·¾¶£©¡£"
+                failwith "é…ç½®ç¼ºå°‘å¿…å¡«é¡¹ algorithm-locationï¼Œè¯·åœ¨ TOML ä¸­æŒ‡å®šç®—æ³• DLL æˆ–è„šæœ¬è·¯å¾„"
 
             if prop.ValueKind <> JsonValueKind.String then
-                failwith "algorithm-location ±ØĞëÊÇ×Ö·û´®¡£"
+                failwith "algorithm-location å¿…é¡»æ˜¯å­—ç¬¦ä¸²"
 
             let v = prop.GetString()
 
             if String.IsNullOrWhiteSpace v then
-                failwith "algorithm-location ²»ÄÜÎª¿Õ×Ö·û´®¡£"
+                failwith "algorithm-location ä¸èƒ½ä¸ºç©ºå­—ç¬¦ä¸²"
 
         // let writeJson (path: string) (je: JsonElement) =
         //     use fs = File.Create path
@@ -277,23 +277,23 @@ module Program =
                 if File.Exists p then
                     Path.GetFullPath p
                 else
-                    failwithf "Î´ÕÒµ½ TOML ÅäÖÃÎÄ¼ş£º%s" p
+                    failwithf "æœªæ‰¾åˆ° TOML é…ç½®æ–‡ä»¶ï¼š%s" p
             else
                 let p = Path.Combine(Directory.GetCurrentDirectory(), input + ".toml")
 
                 if File.Exists p then
                     Path.GetFullPath p
                 else
-                    failwithf "Î´ÔÚµ±Ç°¹¤×÷Ä¿Â¼ÕÒµ½ TOML ÅäÖÃÎÄ¼ş£º%s" p
+                    failwithf "åœ¨å½“å‰å·¥ä½œç›®å½•æœªæ‰¾åˆ° TOML é…ç½®æ–‡ä»¶ï¼š%s" p
 
-        // ½« JsonElement ×ªÎª Dictionary<string, obj> ÒÔ¹© Config.MergeCommandLineArgumentsWithConfiguration Ê¹ÓÃ
+        // å°† JsonElement è½¬ä¸º Dictionary<string, obj> ä¾› Config.MergeCommandLineArgumentsWithConfiguration ä½¿ç”¨
         let rec private jsonToObj (je: JsonElement) : obj =
             match je.ValueKind with
             | JsonValueKind.Null
             | JsonValueKind.Undefined -> null
             | JsonValueKind.String -> box (je.GetString())
             | JsonValueKind.Number ->
-                // ³¢ÊÔ±£ÁôÕûÊı£¬·ñÔòÎª double
+                // TOML æ•°å€¼é»˜è®¤è§£æä¸º double
                 match je.TryGetInt64() with
                 | true, v -> box v
                 | _ -> box (je.GetDouble())
@@ -317,7 +317,7 @@ module Program =
 
         let toDictionary (je: JsonElement) : Collections.Generic.Dictionary<string, obj> =
             if je.ValueKind <> JsonValueKind.Object then
-                failwith "TOML ¶¥²ã±ØĞëÊÇ¶ÔÏó/±í¡£"
+                failwith "TOML æ ¹èŠ‚ç‚¹å¿…é¡»æ˜¯å¯¹è±¡/è¡¨"
 
             jsonToObj je :?> Collections.Generic.Dictionary<string, obj>
 
@@ -329,9 +329,9 @@ module Program =
         interface IArgParserTemplate with
             member x.Usage =
                 match x with
-                | Config _ -> "TOML ÅäÖÃÎÄ¼şÂ·¾¶£¬»òÖ»Ğ´ÎÄ¼şÃû£¨²»º¬Â·¾¶£©£¬½«´Óµ±Ç°¹¤×÷Ä¿Â¼²éÕÒÍ¬Ãû .toml¡££¨×¢Òâ£ºTOML ±ØĞë°üº¬¸ù¼¶¼ü algorithm-location£©"
-                | NoBuild -> "Ìø¹ıÔÚÔËĞĞÇ°¶Ô Algorithm ÏîÄ¿µÄ¹¹½¨¡£"
-                | Hello -> "´òÓ¡Ì½²âĞÅÏ¢¡£"
+                | Config _ -> "TOML é…ç½®æ–‡ä»¶è·¯å¾„ï¼›å¯å†™æ–‡ä»¶åæˆ–å®Œæ•´è·¯å¾„ï¼Œè‹¥ä»…æä¾›æ–‡ä»¶åä¼šåœ¨å½“å‰å·¥ä½œç›®å½•æŸ¥æ‰¾åŒå .tomlã€‚æ³¨æ„ï¼šTOML é…ç½®å¿…é¡»åŒ…å« algorithm-locationã€‚"
+                | NoBuild -> "è·³è¿‡é¢„æ„å»ºå½“å‰ Algorithm é¡¹ç›®"
+                | Hello -> "æ‰“å°ä»‹ç»ä¿¡æ¯"
 
     [<EntryPoint>]
     let main (argv: string array) =
@@ -368,11 +368,13 @@ module Program =
     
                     // pre-build Algorithm project in Debug configuration
                     let buildExitCode =
-                        if skipBuild then 0 else
+                        if skipBuild then
+                            0
+                        else
                             try
                                 let projPath = Path.Combine(Directory.GetCurrentDirectory(), "Algorithm", "Algorithm.fsproj")
                                 if not (File.Exists projPath) then
-                                    Console.Error.WriteLine($"Î´ÕÒµ½Ëã·¨ÏîÄ¿ÎÄ¼ş£º{projPath}")
+                                    Console.Error.WriteLine($"æœªæ‰¾åˆ°ç®—æ³•é¡¹ç›®æ–‡ä»¶ï¼š{projPath}")
                                     3
                                 else
                                     let startInfo = new System.Diagnostics.ProcessStartInfo()
@@ -389,35 +391,35 @@ module Program =
                                     p.BeginErrorReadLine()
                                     p.WaitForExit()
                                     if p.ExitCode <> 0 then
-                                        Console.Error.WriteLine($"Algorithm ¹¹½¨Ê§°Ü£¬ÍË³öÂë {p.ExitCode}")
+                                        Console.Error.WriteLine($"Algorithm é¡¹ç›®æ„å»ºå¤±è´¥ï¼Œé€€å‡ºç  {p.ExitCode}")
                                     else
-                                        Console.WriteLine("Algorithm Ô¤¹¹½¨Íê³É£¨Debug£©¡£")
+                                        Console.WriteLine("Algorithm é¢„æ„å»ºæˆåŠŸï¼ˆDebug é…ç½®ï¼‰")
                                     p.ExitCode
                             with ex ->
-                                Console.Error.WriteLine($"¹¹½¨ Algorithm ÏîÄ¿Ê±³ö´í£º{ex.Message}")
+                                Console.Error.WriteLine($"æ„å»º Algorithm é¡¹ç›®æ—¶å‘ç”Ÿé”™è¯¯ï¼š{ex.Message}")
                                 3
-    
+
                     if buildExitCode <> 0 then
                         buildExitCode
                     else
-                        // in-memory ºÏ²¢£¨²»ÂäµØ JSON ÎÄ¼ş£©²¢Æô¶¯ÒıÇæ
+                        // åœ¨å†…å­˜ä¸­åˆå¹¶é…ç½®å¹¶è½¬æ¢ä¸º JSON ä¾›å¼•æ“ä½¿ç”¨
                         TomlToJson.toDictionary cfg |> launch |> ignore
                         0
-    
-                    // µ÷ÊÔÓÃÍ¾£º°Ñ½âÎöºóµÄÅäÖÃĞ´Èë±¾µØ config.json ±ãÓÚºË¶Ô
+
+                    // å¦‚éœ€è°ƒè¯•å¯å°†é…ç½®å†™å…¥æœ¬åœ° config.json ä¾›å¼•æ“ä½¿ç”¨
                     // let debugConfigPath = Path.Combine(Directory.GetCurrentDirectory(), "config.json")
                     // TomlToJson.writeJson debugConfigPath cfg
     
                 // launch (Some argsDict)
                 with ex ->
-                    Console.Error.WriteLine($"TOML ½âÎöÊ§°Ü£º{ex.Message}")
+                    Console.Error.WriteLine($"TOML è§£æå¤±è´¥ï¼š{ex.Message}")
                     2
             | None ->
                 match results.TryGetResult Hello with
                 | Some _ ->
-                    Console.WriteLine("ÓÃ·¨£ºlauncher -c <ÅäÖÃ.toml>")
-                    Console.WriteLine("Ê¾Àı£ºdotnet run --project Launcher -- -c Launcher/backtesting.toml")
+                    Console.WriteLine("ç”¨æ³•ï¼šlauncher -c <é…ç½®.toml>")
+                    Console.WriteLine("ç¤ºä¾‹ï¼šdotnet run --project Launcher -- -c Launcher/backtesting.toml")
                     1
                 | None ->
-                    Console.WriteLine("ÇëÊ¹ÓÃ -c <ÅäÖÃ.toml> Ö¸¶¨ÅäÖÃÎÄ¼ş£»»òÓÃ --help ²é¿´°ïÖú¡£")
+                    Console.WriteLine("è¯·ä½¿ç”¨ -c <é…ç½®.toml> æŒ‡å®šé…ç½®æ–‡ä»¶ï¼Œæˆ– --help æŸ¥çœ‹è¯¦ç»†å¸®åŠ©")
                     1
