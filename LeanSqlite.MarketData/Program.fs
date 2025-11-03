@@ -282,10 +282,10 @@ module private Impl =
         if rows.Length = 0 then
             printfn "No data."
         else
-            printfn "market   security  ticker   res   count"
+            printfn "market   security  ticker        res   start (UTC)             end (UTC)"
 
-            for m, s, t, r, cnt in rows do
-                printfn "%-8s %-8s %-8s %-5s %8d" m s t r cnt
+            for m, s, t, r, startT, endT in rows do
+                printfn "%-8s %-8s %-12s %-5s %s %s" m s t r (startT.ToString("u")) (endT.ToString("u"))
 
     let runStats (args: ParseResults<StatsArgs>) =
         let conn = args.TryGetResult StatsArgs.Connection

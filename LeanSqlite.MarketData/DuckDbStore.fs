@@ -144,8 +144,8 @@ module DuckDbStore =
             tx.Commit()
 
 
-    /// Distinct list of (Market, Security, Ticker, Res) with counts
-    let listInstruments (connStr: string option) : (string * string * string * string * int64) array =
+    /// Distinct list of (Market, Security, Ticker, Res) with contiguous data ranges
+    let listInstruments (connStr: string option) : (string * string * string * string * DateTime * DateTime) array =
         use conn = new DuckDBConnection(connString connStr)
         conn.Open()
         ensureSchema conn
@@ -153,11 +153,59 @@ module DuckDbStore =
         use cmd = conn.CreateCommand()
 
         cmd.CommandText <-
-            """
-            SELECT Market, Security, Ticker, Res, COUNT(*)
-            FROM Candles
-            GROUP BY Market, Security, Ticker, Res
-            ORDER BY Market, Security, Ticker, Res;
+            $"""
+            WITH ordered AS (
+                SELECT
+                    Market,
+                    Security,
+                    Ticker,
+                    Res,
+                    Time,
+                    PeriodS,
+                    LAG(Time) OVER (
+                        PARTITION BY Market, Security, Ticker, Res
+                        ORDER BY Time
+                    ) AS PrevTime
+                FROM {Duck.SqlParts.Table}
+            ),
+            flagged AS (
+                SELECT
+                    Market,
+                    Security,
+                    Ticker,
+                    Res,
+                    Time,
+                    CASE
+                        WHEN PrevTime IS NULL THEN 1
+                        WHEN DATEDIFF('second', PrevTime, Time) <> PeriodS THEN 1
+                        ELSE 0
+                    END AS IsBreak
+                FROM ordered
+            ),
+            grouped AS (
+                SELECT
+                    Market,
+                    Security,
+                    Ticker,
+                    Res,
+                    Time,
+                    SUM(IsBreak) OVER (
+                        PARTITION BY Market, Security, Ticker, Res
+                        ORDER BY Time
+                        ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+                    ) AS RangeId
+                FROM flagged
+            )
+            SELECT
+                Market,
+                Security,
+                Ticker,
+                Res,
+                MIN(Time) AS StartTime,
+                MAX(Time) AS EndTime
+            FROM grouped
+            GROUP BY Market, Security, Ticker, Res, RangeId
+            ORDER BY Market, Security, Ticker, Res, StartTime;
             """
 
         use reader = cmd.ExecuteReader()
@@ -168,8 +216,9 @@ module DuckDbStore =
             let s = reader.GetString 1
             let t = reader.GetString 2
             let r = reader.GetString 3
-            let c = reader.GetInt64 4
-            buf.Add(m, s, t, r, c)
+            let startT = reader.GetFieldValue<DateTime> 4
+            let endT = reader.GetFieldValue<DateTime> 5
+            buf.Add(m, s, t, r, startT, endT)
 
         buf.ToArray()
 
