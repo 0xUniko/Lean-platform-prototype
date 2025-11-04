@@ -18,7 +18,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\lean\Common\QuantConnect.csproj" />
-    <ProjectReference Include="..\LeanDuckDb.MarketData\LeanDuckDb.MarketData.fsproj" />
+    <ProjectReference Include="..\MarketData\MarketData.fsproj" />
     <ProjectReference Include="..\lean\Algorithm\QuantConnect.Algorithm.csproj" />
     <ProjectReference Include="..\lean\Indicators\QuantConnect.Indicators.csproj" />
   </ItemGroup>

@@ -11,7 +11,7 @@ namespace Algorithm
 open System
 open System.IO
 open System.Globalization
-open LeanDuckDb.MarketData
+open MarketData
 open QuantConnect
 open QuantConnect.Data.Market
 

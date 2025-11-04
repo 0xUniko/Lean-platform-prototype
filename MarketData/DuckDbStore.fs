@@ -1,4 +1,4 @@
-namespace LeanDuckDb.MarketData
+﻿namespace MarketData
 
 open System
 open System.Data

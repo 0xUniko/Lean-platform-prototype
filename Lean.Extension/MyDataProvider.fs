@@ -1,4 +1,4 @@
-namespace Lean.Extension
+﻿namespace Lean.Extension
 
 open System
 open System.IO
@@ -31,7 +31,7 @@ type MyDataProvider() as this =
     // Build in-memory zip stream for a given date+symbol with constant OHLC values
     // Locate the DuckDB connection string (defaults to the library-provided path)
     let getConnStr () =
-        let defaultConn = LeanDuckDb.MarketData.DuckDbStore.defaultConnectionString
+        let defaultConn = MarketData.DuckDbStore.defaultConnectionString
         Config.Get("duckdb-connection", defaultConn)
 
     // Build in-memory zip from DB (crypto minute trade bars for a given date)
@@ -40,8 +40,8 @@ type MyDataProvider() as this =
         let res = Resolution.Minute
         let fromUtc = DateTime(date.Year, date.Month, date.Day, 0, 0, 0, DateTimeKind.Utc)
         let toUtc = fromUtc.AddDays(1.0)
-        let range : LeanDuckDb.MarketData.Domain.DateRange = { FromUtc = fromUtc; ToUtc = toUtc }
-        let bars : QuantConnect.Data.Market.TradeBar[] = LeanDuckDb.MarketData.DuckDbStore.queryBars (Some (getConnStr())) symbol res range
+        let range : MarketData.Domain.DateRange = { FromUtc = fromUtc; ToUtc = toUtc }
+        let bars : QuantConnect.Data.Market.TradeBar[] = MarketData.DuckDbStore.queryBars (Some (getConnStr())) symbol res range
 
         let entryName = QuantConnect.Util.LeanData.GenerateZipEntryName(symbol, date, res, TickType.Trade)
 
@@ -77,8 +77,8 @@ type MyDataProvider() as this =
         let res = Resolution.Minute
         let fromUtc = DateTime(date.Year, date.Month, date.Day, 0, 0, 0, DateTimeKind.Utc)
         let toUtc = fromUtc.AddDays(1.0)
-        let range : LeanDuckDb.MarketData.Domain.DateRange = { FromUtc = fromUtc; ToUtc = toUtc }
-        let bars : QuantConnect.Data.Market.TradeBar[] = LeanDuckDb.MarketData.DuckDbStore.queryBars (Some (getConnStr())) symbol res range
+        let range : MarketData.Domain.DateRange = { FromUtc = fromUtc; ToUtc = toUtc }
+        let bars : QuantConnect.Data.Market.TradeBar[] = MarketData.DuckDbStore.queryBars (Some (getConnStr())) symbol res range
 
         let entryName = QuantConnect.Util.LeanData.GenerateZipEntryName(symbol, date, res, TickType.Trade)
 
