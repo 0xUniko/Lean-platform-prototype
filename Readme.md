@@ -8,6 +8,7 @@ Launcher: 启动器，直接移植的Lean的Launcher，配置文件改成了toml
 example: dotnet run --project Launcher -- -c Launcher/backtesting.toml
 
 LeanDuckDb.MarketData: DuckDB 行情数据工具集，可单独使用
+
 Lean.Extension: Lean扩展，比如把Lean回测的数据源换成本地的Data
 
 TODO:
