@@ -274,7 +274,7 @@ module Program =
             )
 
         let parser =
-            ArgumentParser.Create<Commands>(programName = "leanduckdb", errorHandler = errorHandler)
+            ArgumentParser.Create<Commands>(errorHandler = errorHandler)
 
         let isHelpArg =
             function
@@ -293,17 +293,17 @@ module Program =
             match cmd.Trim().ToLowerInvariant() with
             | "data" ->
                 ArgumentParser
-                    .Create<DownloadArgs>(programName = "leanduckdb data", errorHandler = errorHandler)
+                    .Create<DownloadArgs>(errorHandler = errorHandler)
                     .PrintUsage()
                 |> printfn "%s"
             | "list" ->
                 ArgumentParser
-                    .Create<ListArgs>(programName = "leanduckdb list", errorHandler = errorHandler)
+                    .Create<ListArgs>(errorHandler = errorHandler)
                     .PrintUsage()
                 |> printfn "%s"
             | "vacuum" ->
                 ArgumentParser
-                    .Create<VacuumArgs>(programName = "leanduckdb vacuum", errorHandler = errorHandler)
+                    .Create<VacuumArgs>(errorHandler = errorHandler)
                     .PrintUsage()
                 |> printfn "%s"
             | _ -> printRootUsage ()

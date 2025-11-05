@@ -1,24 +1,38 @@
 # Lean Lean
 
-A lean wrapper of [Lean](https://github.com/QuantConnect/Lean), supporting onchain trading
+## A lean wrapper of [Lean](https://github.com/QuantConnect/Lean), supporting onchain trading
 
-Algorithm: 算法，包括策略和数据分析脚本等
+### 项目结构
 
-Launcher: 启动器，直接移植的Lean的Launcher，配置文件改成了toml格式，内容不变
+**Algorithm**: 算法，包括策略和数据分析脚本等
+
+**Launcher**: 启动器，直接移植的Lean的Launcher，配置文件改成了toml格式，内容不变
+
 example: dotnet run --project Launcher -- -c Launcher/backtesting.toml
 
-Data: DuckDB 行情数据工具集，可单独使用
+**MarketData**: DuckDB 行情数据工具集，可单独使用
 
-Lean.Extension: Lean扩展，比如把Lean回测的数据源换成本地的Data
+**Lean.Extension**: Lean扩展，比如把Lean回测的数据源换成本地的Data
+
+### TODO:
+
+需要创建一个Blazor项目作为管理后台，可以管理多个项目
+
+涉及并实现编译部署跑实盘的架构与流程
+
+### Lean代码解析
+
+#### 运行流程
 
 TODO:
-仿照Lean cli以项目为主的管理方式，把我这里的Algorithm拆离出去
 
-疑似Lean扩展的标准名称叫做plugins
+#### 插件与扩展
 
-把Launcher和Data的功能和cli分离，Launcher用Avalonia/Fun.Blazor加个webui可以代替cli与功能交互，webui还可以批量进行管理
+TODO:
 
-Launcher在跑之前要编译一下算法
+#### 数据结构
+
+TODO:
 
 Lean所用到的数据，有多少种类型，分别是什么样的格式，都可以从哪里获取
 
@@ -76,3 +90,18 @@ Crypto: 如 Binance Vision（bookTicker/aggTrades/klines/depth 等原始数据�
 
 在 MyDataProvider.fs 增加 _quote.zip 的生成（用你现有分钟 TradeBar 合成对称 Quote，或接入你将来从 Binance bookTicker 聚合的数据）。
 写一个小工具把 Binance Vision 的 bookTicker/aggTrades 聚合并导出为 Lean 的分钟 Quote/Trade zip。
+
+我在Laucnher这里并没有导入Lean.Extension，为啥我在配置文件里面指定了data-provider，程序就能找到相应的data-provider
+
+原因是 LEAN 用运行时的“按名称发现 + 组合”(MEF/Composer)机制来实例化组件，而不是靠你在代码里手动引用类型。
+
+关键点
+
+Launcher 已经项目级引用了 Lean.Extension，所以构建后 Lean.Extension.dll 会被复制到可执行目录，即使 Program.fs 里没有 open Lean.Extension 也没关系。参见 Launcher/Launcher.fsproj (line 24)。
+引擎启动时读取配置项 data-provider，并通过 Composer.Instance.GetExportedValueByTypeName `<IDataProvider>`(…) 按“类型名”创建实现。参见 lean/Engine/LeanEngineAlgorithmHandlers.cs (line 209)。
+Composer 会从可执行目录（以及可选的 plugin-directory）加载所有 *.dll，建立 MEF 目录并按需实例化。参见 lean/Common/Util/Composer.cs (line 86) 和方法 GetExportedValueByTypeName `<T>` 于 lean/Common/Util/Composer.cs (line 207)。
+接口 QuantConnect.Interfaces.IDataProvider 带有 [InheritedExport(typeof(IDataProvider))]，意味着任何实现该接口的类（比如你的 Lean.Extension.MyDataProvider）都会自动成为可发现的导出，无需在类上再标注 Export，也无需手动在代码里引用。参见 lean/Common/Interfaces/IDataProvider.cs (line 26)。
+配置里只写类型简单名就能匹配（也支持全名/程序集限定名），所以 data-provider = "MyDataProvider" 可以直接定位到你的实现。参见 Launcher/backtesting.toml (line 12)。
+小结
+
+你“没有导入 Lean.Extension”指的是没有在代码里 open/using 或 new；但项目已经引用并输出了该 DLL，Composer 扫描目录 + MEF 的 InheritedExport 让它自动被发现和按配置名实例化。

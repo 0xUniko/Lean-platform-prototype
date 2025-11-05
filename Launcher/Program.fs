@@ -401,8 +401,7 @@ module Program =
                         buildExitCode
                     else
                         // 在内存中合并配置并转换为 JSON 供引擎使用
-                        TomlToJson.toDictionary cfg |> launch |> ignore
-                        0
+                        TomlToJson.toDictionary cfg |> launch
 
                     // 如需调试可将配置写入本地 config.json 供引擎使用
                     // let debugConfigPath = Path.Combine(Directory.GetCurrentDirectory(), "config.json")
